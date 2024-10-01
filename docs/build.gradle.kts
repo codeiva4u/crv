@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         minSdk = 21
-        targetSdk = 33
+        // targetSdk = 33 // Remove this line
     }
 
     namespace = "com.lagradost.api"
@@ -21,6 +21,14 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    testOptions {
+        targetSdk = 33 // Add this line
+    }
+
+    lint {
+        targetSdk = 33 // Add this line
     }
 }
 
@@ -34,10 +42,10 @@ dependencies {
     dokkaImplementation("androidx.test.ext:junit-ktx:1.2.1")
     dokkaImplementation("androidx.core:core-ktx:1.13.1")
     dokkaImplementation("androidx.appcompat:appcompat:1.7.0")
-    dokkaImplementation("androidx.navigation:navigation-ui-ktx:2.7.7")
-    dokkaImplementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.3")
-    dokkaImplementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.3")
-    dokkaImplementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    dokkaImplementation("androidx.navigation:navigation-ui-ktx:2.8.1")
+    dokkaImplementation("androidx.lifecycle:lifecycle-livedata-ktx:2.8.6")
+    dokkaImplementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.6")
+    dokkaImplementation("androidx.navigation:navigation-fragment-ktx:2.8.1")
     dokkaImplementation("jp.wasabeef:glide-transformations:4.3.0")
     dokkaImplementation("androidx.preference:preference-ktx:1.2.1")
     dokkaImplementation("com.google.android.material:material:1.12.0")
@@ -47,15 +55,15 @@ dependencies {
     dokkaImplementation("com.github.bumptech.glide:okhttp3-integration:4.16.0")
     dokkaImplementation("com.google.guava:guava:33.2.1-android")
     dokkaImplementation("dev.zacsweers.autoservice:auto-service-ksp:1.2.0")
-    dokkaImplementation("androidx.media3:media3-ui:1.4.0")
-    dokkaImplementation("androidx.media3:media3-cast:1.4.0")
-    dokkaImplementation("androidx.media3:media3-common:1.4.0")
-    dokkaImplementation("androidx.media3:media3-session:1.4.0")
-    dokkaImplementation("androidx.media3:media3-exoplayer:1.4.0")
+    dokkaImplementation("androidx.media3:media3-ui:1.4.1")
+    dokkaImplementation("androidx.media3:media3-cast:1.4.1")
+    dokkaImplementation("androidx.media3:media3-common:1.4.1")
+    dokkaImplementation("androidx.media3:media3-session:1.4.1")
+    dokkaImplementation("androidx.media3:media3-exoplayer:1.4.1")
     dokkaImplementation("com.google.android.mediahome:video:1.0.0")
-    dokkaImplementation("androidx.media3:media3-exoplayer-hls:1.4.0")
-    dokkaImplementation("androidx.media3:media3-exoplayer-dash:1.4.0")
-    dokkaImplementation("androidx.media3:media3-datasource-okhttp:1.4.0")
+    dokkaImplementation("androidx.media3:media3-exoplayer-hls:1.4.1")
+    dokkaImplementation("androidx.media3:media3-exoplayer-dash:1.4.1")
+    dokkaImplementation("androidx.media3:media3-datasource-okhttp:1.4.1")
     dokkaImplementation("com.jaredrummler:colorpicker:1.1.0") // Subtitle Color Picker
     dokkaImplementation("com.github.recloudstream:media-ffmpeg:1.1.0") // Custom FF-MPEG Lib for Audio Codecs
     dokkaImplementation("com.github.teamnewpipe:NewPipeExtractor:v0.24.2")
@@ -74,9 +82,9 @@ dependencies {
     dokkaImplementation("com.github.LagradOst:SafeFile:0.0.6") // To Prevent the URI File Fu*kery
     dokkaImplementation("org.conscrypt:conscrypt-android:2.5.2") // To Fix SSL Fu*kery on Android 9
     dokkaImplementation("com.uwetrottmann.tmdb2:tmdb-java:2.11.0") // TMDB API v3 Wrapper Made with RetroFit
-    dokkaImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
-    dokkaImplementation("androidx.work:work-runtime:2.9.0")
-    dokkaImplementation("androidx.work:work-runtime-ktx:2.9.0")
+    dokkaImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
+    dokkaImplementation("androidx.work:work-runtime:2.9.1")
+    dokkaImplementation("androidx.work:work-runtime-ktx:2.9.1")
     dokkaImplementation("com.github.Blatzar:NiceHttp:0.4.11") // HTTP Lib
 }
 

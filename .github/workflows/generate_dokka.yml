@@ -13,6 +13,7 @@ on:
       - main
     paths-ignore:
       - '*.md'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -24,7 +25,7 @@ jobs:
         with:
           app_id: ${{ secrets.GH_APP_ID }}
           private_key: ${{ secrets.GH_APP_KEY }}
-          repository: "recloudstream/dokka"
+          repository: "codeiva4u/dokka"
       - name: Checkout
         uses: actions/checkout@master
         with:
@@ -33,14 +34,14 @@ jobs:
       - name: Checkout dokka
         uses: actions/checkout@master
         with:
-          repository: "recloudstream/dokka"
+          repository: "codeiva4u/dokka"
           path: "dokka"
           token: ${{ steps.generate_token.outputs.token }}
       
       - name: Clean old builds
         run: |
           cd $GITHUB_WORKSPACE/dokka/
-          rm -rf "./-cloudstream"
+          rm -rf "./-crv"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -65,8 +66,8 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/dokka
           touch .nojekyll
-          git config --local user.email "111277985+recloudstream[bot]@users.noreply.github.com"
-          git config --local user.name "recloudstream[bot]"
+          git config --local user.email "111277985+codeiva4u[bot]@users.noreply.github.com"
+          git config --local user.name "crv[bot]"
           git add .
-          git commit --amend -m "Generate dokka for recloudstream/cloudstream@${GITHUB_SHA}" || exit 0   # do not error if nothing to commit
+          git commit --amend -m "Generate dokka for codeiva4u/crv@${GITHUB_SHA}" || exit 0   # do not error if nothing to commit
           git push --force

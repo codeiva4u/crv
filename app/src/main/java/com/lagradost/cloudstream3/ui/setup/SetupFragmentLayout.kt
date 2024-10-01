@@ -16,7 +16,6 @@ import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 import org.acra.ACRA
 
-
 class SetupFragmentLayout : Fragment() {
 
     var binding: FragmentSetupLayoutBinding? = null
@@ -45,56 +44,15 @@ class SetupFragmentLayout : Fragment() {
 
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
 
-            val prefNames = resources.getStringArray(R.array.app_layout)
-            val prefValues = resources.getIntArray(R.array.app_layout_values)
+            // डिफ़ॉल्ट रूप से "Auto" सेट करना
+            val defaultLayoutValue = resources.getIntArray(R.array.app_layout_values)[0] // Assuming "Auto" is the first value
+            settingsManager.edit()
+                .putInt(getString(R.string.app_layout_key), defaultLayoutValue)
+                .apply()
 
-            val currentLayout =
-                settingsManager.getInt(getString(R.string.app_layout_key), -1)
-
-            val arrayAdapter =
-                ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
-
-            arrayAdapter.addAll(prefNames.toList())
-            binding?.apply {
-                listview1.adapter = arrayAdapter
-                listview1.choiceMode = AbsListView.CHOICE_MODE_SINGLE
-                listview1.setItemChecked(
-                    prefValues.indexOf(currentLayout), true
-                )
-
-                listview1.setOnItemClickListener { _, _, position, _ ->
-                    settingsManager.edit()
-                        .putInt(getString(R.string.app_layout_key), prefValues[position])
-                        .apply()
-                    activity?.recreate()
-                }
-                acraSwitch.setOnCheckedChangeListener { _, enableCrashReporting ->
-                    // Use same pref as in settings
-                    settingsManager.edit().putBoolean(ACRA.PREF_DISABLE_ACRA, !enableCrashReporting)
-                        .apply()
-                    val text =
-                        if (enableCrashReporting) R.string.bug_report_settings_off else R.string.bug_report_settings_on
-                    crashReportingText.text = getText(text)
-                }
-
-                val enableCrashReporting = !settingsManager.getBoolean(ACRA.PREF_DISABLE_ACRA, true)
-
-                acraSwitch.isChecked = enableCrashReporting
-                crashReportingText.text =
-                    getText(
-                        if (enableCrashReporting) R.string.bug_report_settings_off else R.string.bug_report_settings_on
-                    )
-
-
-                nextBtt.setOnClickListener {
-                    setKey(HAS_DONE_SETUP_KEY, true)
-                    findNavController().navigate(R.id.navigation_home)
-                }
-
-                prevBtt.setOnClickListener {
-                    findNavController().popBackStack()
-                }
-            }
+            // सेटअप को समाप्त करना और होम स्क्रीन पर नेविगेट करना
+            setKey(HAS_DONE_SETUP_KEY, true)
+            findNavController().navigate(R.id.navigation_home)
         }
     }
 }
