@@ -84,7 +84,7 @@ open class Vidplay : ExtractorApi() {
 		var vrf = input
 		keys.vidplay.sortedBy { it.sequence }.forEach { step ->
 			when(step.method) {
-				"exchange" -> vrf = exchange(vrf, step.keys?.get(0) ?: return@forEach, step.keys?.get(1) ?: return@forEach)
+				"exchange" -> vrf = exchange(vrf, step.keys?.get(0) ?: return@forEach, step.keys[1])
 				"rc4" -> vrf = rc4Encryption(step.keys?.get(0) ?: return@forEach, vrf)
 				"reverse" -> vrf = vrf.reversed()
 				"base64" -> vrf = Base64.UrlSafe.encode(vrf.toByteArray())
@@ -99,7 +99,7 @@ open class Vidplay : ExtractorApi() {
 		var vrf = input
 		keys.vidplay.sortedByDescending { it.sequence }.forEach { step ->
 			when(step.method) {
-				"exchange" -> vrf = exchange(vrf, step.keys?.get(1) ?: return@forEach, step.keys?.get(0) ?: return@forEach)
+				"exchange" -> vrf = exchange(vrf, step.keys?.get(1) ?: return@forEach, step.keys[0])
 				"rc4" -> vrf = rc4Decryption(step.keys?.get(0) ?: return@forEach, vrf)
 				"reverse" -> vrf = vrf.reversed()
 				"base64" -> vrf = Base64.UrlSafe.decode(vrf).toString(Charsets.UTF_8)

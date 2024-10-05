@@ -2,9 +2,14 @@
 
 package com.lagradost.cloudstream3.extractors
 
-import com.lagradost.api.Log
-import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.SubtitleFile
+import com.lagradost.cloudstream3.app
+import com.lagradost.cloudstream3.utils.ExtractorApi
+import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
+import com.lagradost.cloudstream3.utils.fixUrl
+import com.lagradost.cloudstream3.utils.getAndUnpack
 
 open class RapidVid : ExtractorApi() {
     override val name            = "RapidVid"
@@ -31,11 +36,11 @@ open class RapidVid : ExtractorApi() {
         }
 
         var extractedValue   = Regex("""file": "(.*)",""").find(videoReq)?.groupValues?.get(1)
-        var decoded: String? = null
+        var decoded: String?
 
         if (extractedValue != null) {
             val bytes = extractedValue.split("\\x").filter { it.isNotEmpty() }.map { it.toInt(16).toByte() }.toByteArray()
-            decoded   = String(bytes, Charsets.UTF_8) ?: throw ErrorLoadingException("File not found")
+            decoded   = String(bytes, Charsets.UTF_8)
         } else {
             val evalJWSsetup = Regex("""\};\s*(eval\(function[\s\S]*?)var played = \d+;""").find(videoReq)?.groupValues?.get(1) ?: throw ErrorLoadingException("File not found")
             val JWSsetup      = getAndUnpack(getAndUnpack(evalJWSsetup)).replace("\\\\", "\\")
