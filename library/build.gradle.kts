@@ -21,7 +21,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation("com.github.Blatzar:NiceHttp:0.4.11") // HTTP Lib
-            implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1") /* JSON Parser
+            implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2") /* JSON Parser
             ^ Don't Bump Jackson above 2.13.1 , Crashes on Android TV's and FireSticks that have Min API
             Level 25 or Less. */
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
