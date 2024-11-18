@@ -13,7 +13,7 @@ open class MailRu : ExtractorApi() {
     override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
-        val extRef = referer ?: ""
+        referer ?: ""
 
         val vidId     = url.substringAfter("video/embed/").trim()
         val videoReq  = app.get("${mainUrl}/+/video/meta/${vidId}", referer=url)

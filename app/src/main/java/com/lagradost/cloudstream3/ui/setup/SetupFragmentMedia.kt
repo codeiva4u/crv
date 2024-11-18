@@ -36,7 +36,6 @@ class SetupFragmentMedia : Fragment() {
         //return inflater.inflate(R.layout.fragment_setup_media, container, false)
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         normalSafeApiCall {
@@ -45,49 +44,24 @@ class SetupFragmentMedia : Fragment() {
             val ctx = context ?: return@normalSafeApiCall
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
 
-            val arrayAdapter =
-                ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
+            // डिफ़ॉल्ट मान सेट करना
+            val defaultValues = setOf(
+                TvType.Movie.ordinal.toString(),
+                TvType.TvSeries.ordinal.toString(),
+                TvType.Live.ordinal.toString()
+            )
+            settingsManager.edit()
+                .putStringSet(getString(R.string.prefer_media_type_key), defaultValues)
+                .apply()
 
-            val names = enumValues<TvType>().sorted().map { it.name }
-            val selected = mutableListOf<Int>()
+            // UI को छुपाना
+            binding?.setupRoot?.visibility = View.GONE
 
-            arrayAdapter.addAll(names)
-            binding?.apply {
-                listview1.let {
-                    it.adapter = arrayAdapter
-                    it.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
+            // Regenerate set homepage
+            DataStoreHelper.currentHomePage = null
 
-                    it.setOnItemClickListener { _, _, _, _ ->
-                        it.checkedItemPositions?.forEach { key, value ->
-                            if (value) {
-                                selected.add(key)
-                            } else {
-                                selected.remove(key)
-                            }
-                        }
-                        val prefValues = selected.mapNotNull { pos ->
-                            val item =
-                                it.getItemAtPosition(pos)?.toString() ?: return@mapNotNull null
-                            val itemVal = TvType.valueOf(item)
-                            itemVal.ordinal.toString()
-                        }.toSet()
-                        settingsManager.edit()
-                            .putStringSet(getString(R.string.prefer_media_type_key), prefValues)
-                            .apply()
-
-                        // Regenerate set homepage
-                        DataStoreHelper.currentHomePage = null
-                    }
-                }
-
-                nextBtt.setOnClickListener {
-                    findNavController().navigate(R.id.navigation_setup_media_to_navigation_setup_layout)
-                }
-
-                prevBtt.setOnClickListener {
-                    findNavController().popBackStack()
-                }
-            }
+            // अगले स्क्रीन पर जाने के लिए बटन क्लिक करें
+            findNavController().navigate(R.id.navigation_setup_media_to_navigation_setup_layout)
         }
     }
 }

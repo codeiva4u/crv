@@ -14,7 +14,8 @@ actual fun getContext(): Any? {
 }
 
 actual fun setContext(context: WeakReference<Any>) {
-    if (context.get() is Context) {
-        ctx = context as? WeakReference<Context>
+    val contextRef = context.get()
+    if (contextRef is Context) {
+        ctx = WeakReference(contextRef)
     }
 }

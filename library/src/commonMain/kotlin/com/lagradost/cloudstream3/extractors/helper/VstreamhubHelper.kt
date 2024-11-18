@@ -19,9 +19,9 @@ class VstreamhubHelper {
             if (url.startsWith(baseUrl)) {
                 // Fetch links
                 val doc = app.get(url).document.select("script")
-                doc?.forEach {
-                    val innerText = it?.toString()
-                    if (!innerText.isNullOrEmpty()) {
+                doc.forEach {
+                    val innerText = it.toString()
+                    if (innerText.isNotEmpty()) {
                         if (innerText.contains("file:")) {
                             val startString = "file: "
                             val aa = innerText.substring(innerText.indexOf(startString))
