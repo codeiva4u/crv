@@ -68,12 +68,16 @@ class SetupFragmentExtensions : Fragment() {
             val hasRepos = repositories.isNotEmpty()
             binding?.repoRecyclerView?.isVisible = hasRepos
             binding?.blankRepoScreen?.isVisible = !hasRepos
-//            view_public_repositories_button?.isVisible = hasRepos
 
             if (hasRepos) {
                 binding?.repoRecyclerView?.adapter = RepoAdapter(true, {}, {
                     PluginsViewModel.downloadAll(activity, it.url, null)
                 }).apply { updateList(repositories) }
+
+                // Automatically download all plugins from the repositories
+                repositories.forEach {
+                    PluginsViewModel.downloadAll(activity, it.url, null)
+                }
             }
 //            else {
 //                list_repositories?.setOnClickListener {

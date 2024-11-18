@@ -15,13 +15,13 @@ open class VideoSeyred : ExtractorApi() {
     override val requiresReferer = true
 
     override suspend fun getUrl(url: String, referer: String?, subtitleCallback: (SubtitleFile) -> Unit, callback: (ExtractorLink) -> Unit) {
-        val extRef   = referer ?: ""
+        referer ?: ""
         val videoId  = url.substringAfter("embed/").substringBefore("?")
         val videoUrl = "${mainUrl}/playlist/${videoId}.json"
 
         val responseRaw                          = app.get(videoUrl)
         val responseList:List<VideoSeyredSource> = jacksonObjectMapper().readValue(responseRaw.text) ?: throw ErrorLoadingException("VideoSeyred")
-        val response                              = responseList[0] ?: throw ErrorLoadingException("VideoSeyred")
+        val response                              = responseList[0]
 
         for (track in response.tracks) {
             if (track.label != null && track.kind == "captions") {

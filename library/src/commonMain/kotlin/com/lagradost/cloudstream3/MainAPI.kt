@@ -665,24 +665,24 @@ enum class DubStatus(val id: Int) {
     Subbed(0),
 }
 
-enum class TvType(value: Int?) {
-    Movie(1),
-    AnimeMovie(2),
-    TvSeries(3),
-    Cartoon(4),
-    Anime(5),
-    OVA(6),
-    Torrent(7),
-    Documentary(8),
-    AsianDrama(9),
-    Live(10),
-    NSFW(11),
-    Others(12),
-    Music(13),
-    AudioBook(14),
+enum class TvType {
+    Movie,
+    AnimeMovie,
+    TvSeries,
+    Cartoon,
+    Anime,
+    OVA,
+    Torrent,
+    Documentary,
+    AsianDrama,
+    Live,
+    NSFW,
+    Others,
+    Music,
+    AudioBook,
 
     /** Wont load the built in player, make your own interaction */
-    CustomMedia(15),
+    CustomMedia,
 }
 
 public enum class AutoDownloadMode(val value: Int) {
@@ -725,24 +725,24 @@ data class HomePageList(
     val isHorizontalImages: Boolean = false
 )
 
-enum class SearchQuality(value: Int?) {
+enum class SearchQuality {
     //https://en.wikipedia.org/wiki/Pirated_movie_release_types
-    Cam(1),
-    CamRip(2),
-    HdCam(3),
-    Telesync(4), // TS
-    WorkPrint(5),
-    Telecine(6), // TC
-    HQ(7),
-    HD(8),
-    HDR(9), // high dynamic range
-    BlueRay(10),
-    DVD(11),
-    SD(12),
-    FourK(13),
-    UHD(14),
-    SDR(15), // standard dynamic range
-    WebRip(16)
+    Cam,
+    CamRip,
+    HdCam,
+    Telesync, // TS
+    WorkPrint,
+    Telecine, // TC
+    HQ,
+    HD,
+    HDR, // high dynamic range
+    BlueRay,
+    DVD,
+    SD,
+    FourK,
+    UHD,
+    SDR, // standard dynamic range
+    WebRip
 }
 
 /**Add anything to here if you find a site that uses some specific naming convention*/
@@ -1188,11 +1188,11 @@ interface LoadResponse {
             this.addSimklId(SimklSyncServices.Imdb, id)
         }
 
-        fun LoadResponse.addTrackId(id: String?) {
+        fun LoadResponse.addTrackId() {
             // TODO add trackt sync
         }
 
-        fun LoadResponse.addkitsuId(id: String?) {
+        fun LoadResponse.addkitsuId() {
             // TODO add kitsu sync
         }
 
@@ -1742,7 +1742,7 @@ data class Episode(
 
 fun Episode.addDate(date: String?, format: String = "yyyy-MM-dd") {
     try {
-        this.date = SimpleDateFormat(format)?.parse(date ?: return)?.time
+        this.date = SimpleDateFormat(format).parse(date ?: return)?.time
     } catch (e: Exception) {
         logError(e)
     }
