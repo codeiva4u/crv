@@ -45,9 +45,6 @@ class SetupFragmentMedia : Fragment() {
                 .putStringSet(getString(R.string.prefer_media_type_key), defaultValues)
                 .apply()
 
-            // **नया बदलाव: UI को छुपाएँ**
-            binding?.setupRoot?.visibility = View.GONE
-
             // Regenerate set homepage
             DataStoreHelper.currentHomePage = null
 

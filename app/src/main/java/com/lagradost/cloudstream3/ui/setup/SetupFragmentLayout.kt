@@ -41,8 +41,6 @@ class SetupFragmentLayout : Fragment() {
                 .apply()
 
             binding?.apply {
-                // **नया बदलाव: ListView को छुपाएँ**
-                listview1.visibility = View.GONE
 
                 // **अगले बटन पर क्लिक करने पर: सीधे होम स्क्रीन पर नेविगेट करें**
                 nextBtt.setOnClickListener {
