@@ -36,6 +36,7 @@ class SetupFragmentMedia : Fragment() {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
 
  //==================नया बदलाव: Movie, TvSeries, Live को डिफ़ॉल्ट रूप से सेट करें =================
+            // डिफ़ॉल्ट मान सेट करना
             val defaultValues = setOf(
                 TvType.Movie.ordinal.toString(),
                 TvType.TvSeries.ordinal.toString(),
@@ -45,10 +46,13 @@ class SetupFragmentMedia : Fragment() {
                 .putStringSet(getString(R.string.prefer_media_type_key), defaultValues)
                 .apply()
 
+            // UI को छुपाना
+            binding?.setupRoot?.visibility = View.GONE
+
             // Regenerate set homepage
             DataStoreHelper.currentHomePage = null
 
-            // **नया बदलाव: सीधे अगले स्क्रीन पर नेविगेट करें**
+            // अगले स्क्रीन पर जाने के लिए बटन क्लिक करें
             findNavController().navigate(R.id.navigation_setup_media_to_navigation_setup_layout)
         }
     }
