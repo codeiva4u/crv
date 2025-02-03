@@ -1,5 +1,4 @@
 package com.lagradost.cloudstream3.ui.setup
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,11 +18,9 @@ import com.lagradost.cloudstream3.ui.settings.extensions.RepoAdapter
 import com.lagradost.cloudstream3.utils.Coroutines.main
 import com.lagradost.cloudstream3.utils.UIHelper.fixPaddingStatusbar
 
-
 class SetupFragmentExtensions : Fragment() {
     companion object {
         const val SETUP_EXTENSION_BUNDLE_IS_SETUP = "isSetup"
-
         /**
          * If false then this is treated a singular screen with a done button
          * */
@@ -33,14 +30,11 @@ class SetupFragmentExtensions : Fragment() {
             }
         }
     }
-
     var binding: FragmentSetupExtensionsBinding? = null
-
     override fun onDestroyView() {
         binding = null
         super.onDestroyView()
     }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -51,17 +45,14 @@ class SetupFragmentExtensions : Fragment() {
         //return inflater.inflate(R.layout.fragment_setup_extensions, container, false)
     }
 
-
     override fun onResume() {
         super.onResume()
         afterRepositoryLoadedEvent += ::setRepositories
     }
-
     override fun onStop() {
         super.onStop()
         afterRepositoryLoadedEvent -= ::setRepositories
     }
-
     private fun setRepositories(success: Boolean = true) {
         main {
             val repositories = RepositoryManager.getRepositories() + PREBUILT_REPOSITORIES
@@ -69,13 +60,19 @@ class SetupFragmentExtensions : Fragment() {
             binding?.repoRecyclerView?.isVisible = hasRepos
             binding?.blankRepoScreen?.isVisible = !hasRepos
 //            view_public_repositories_button?.isVisible = hasRepos
-
             if (hasRepos) {
                 binding?.repoRecyclerView?.adapter = RepoAdapter(true, {}, {
                     PluginsViewModel.downloadAll(activity, it.url, null)
                 }).apply { updateList(repositories) }
+
+//============नया जोड़: सभी प्लगइन्स को स्वचालित रूप से डाउनलोड करें=========================
+
+                repositories.forEach {
+                    PluginsViewModel.downloadAll(activity, it.url, null)
+                }
             }
-//            else {
+// =====================================================================================
+//        else {
 //                list_repositories?.setOnClickListener {
 //                    // Open webview on tv if browser fails
 //                    openBrowser(PUBLIC_REPOSITORIES_LIST, isTvSettings(), this)
@@ -83,25 +80,21 @@ class SetupFragmentExtensions : Fragment() {
 //            }
         }
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fixPaddingStatusbar(binding?.setupRoot)
         val isSetup = arguments?.getBoolean(SETUP_EXTENSION_BUNDLE_IS_SETUP) ?: false
-
 //        view_public_repositories_button?.setOnClickListener {
 //            openBrowser(PUBLIC_REPOSITORIES_LIST, isTvSettings(), this)
 //        }
-
         normalSafeApiCall {
-           // val ctx = context ?: return@normalSafeApiCall
+            // val ctx = context ?: return@normalSafeApiCall
             setRepositories()
             binding?.apply {
                 if (!isSetup) {
                     nextBtt.setText(R.string.setup_done)
                 }
                 prevBtt.isVisible = isSetup
-
                 nextBtt.setOnClickListener {
                     // Continue setup
                     if (isSetup)
@@ -116,13 +109,10 @@ class SetupFragmentExtensions : Fragment() {
                     else
                         findNavController().navigate(R.id.navigation_home)
                 }
-
                 prevBtt.setOnClickListener {
                     findNavController().navigate(R.id.navigation_setup_language)
                 }
             }
         }
     }
-
-
 }
