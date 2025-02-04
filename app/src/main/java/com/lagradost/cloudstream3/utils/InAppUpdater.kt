@@ -1,9 +1,10 @@
 package com.lagradost.cloudstream3.utils
 
 import android.app.Activity
-import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
+import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -11,22 +12,25 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
+import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
+import com.lagradost.cloudstream3.services.PackageInstallerService
+import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import okio.BufferedSink
 import okio.buffer
 import okio.sink
-import java.io.File
-import android.text.TextUtils
-import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
-import com.lagradost.cloudstream3.services.PackageInstallerService
-import com.lagradost.cloudstream3.utils.AppContextUtils.setDefaultFocus
 import java.io.BufferedReader
+import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 
@@ -205,7 +209,7 @@ class InAppUpdater {
 
         private val updateLock = Mutex()
 
-        private suspend fun Activity.downloadUpdate(url: String): Boolean {
+        private suspend fun Activity.downloadUpdate(url: String, autoInstall: Boolean = false): Boolean {
             try {
                 Log.d(LOG_TAG, "Downloading update: $url")
                 val appUpdateName = "CloudStream"
@@ -218,13 +222,18 @@ class InAppUpdater {
                     deleteFileOnExit(it)
                 }
 
-                val downloadedFile = File.createTempFile(appUpdateName, ".$appUpdateSuffix")
+                val downloadedFile =
+                    withContext(Dispatchers.IO) {
+                        File.createTempFile(appUpdateName, ".$appUpdateSuffix")
+                    }
                 val sink: BufferedSink = downloadedFile.sink().buffer()
 
                 updateLock.withLock {
                     sink.writeAll(app.get(url).body.source())
                     sink.close()
-                    openApk(this, Uri.fromFile(downloadedFile))
+                    if (autoInstall) {
+                        openApk(this, Uri.fromFile(downloadedFile))
+                    }
                 }
                 return true
             } catch (e: Exception) {
@@ -232,7 +241,42 @@ class InAppUpdater {
             }
         }
 
-        private fun openApk(context: Context, uri: Uri) {
+        private fun Activity.showInstallDialog(apkPath: String, apkVersion: String) {
+            val downloadedFile = File(apkPath)
+            if (!downloadedFile.exists()) {
+                showToast(getString(R.string.update_file_missing), Toast.LENGTH_LONG)
+                return
+            }
+
+            val currentVersion = this.packageName?.let {
+                this.packageManager.getPackageInfo(it, 0)?.versionName
+            }
+
+            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+            builder.setTitle(
+                getString(R.string.install_update_format).format(
+                    currentVersion,
+                    apkVersion
+                )
+            )
+            
+            builder.setMessage(this.getString(R.string.ready_to_install_message))
+            
+            builder.setPositiveButton(this.getString(R.string.install)) { dialog: DialogInterface, _: Int ->
+                openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
+                dialog.dismiss()
+            }
+            
+            builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
+                dialog.dismiss()
+            }
+            
+            val dialog = builder.create()
+            dialog.show()
+            dialog.setDefaultFocus()
+        }
+
+        private fun openApk(context: Activity, uri: Uri) {
             try {
                 uri.path?.let {
                     val contentUri = FileProvider.getUriForFile(
@@ -258,6 +302,24 @@ class InAppUpdater {
          **/
         suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true): Boolean {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+            
+            // Check for existing downloaded APK
+            val apkPath = settingsManager.getString("downloaded_apk_path", null)
+            val apkVersion = settingsManager.getString("downloaded_apk_version", null)
+            if (!checkAutoUpdate && apkPath != null && apkVersion != null) {
+                runOnUiThread {
+                    try {
+                        showInstallDialog(apkPath, apkVersion)
+                        settingsManager.edit()
+                            .remove("downloaded_apk_path")
+                            .remove("downloaded_apk_version")
+                            .apply()
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
+                }
+                return true
+            }
 
             if (!checkAutoUpdate || settingsManager.getBoolean(
                     getString(R.string.auto_update_key),
@@ -341,7 +403,15 @@ class InAppUpdater {
                                         // Legacy
                                         1 -> {
                                             ioSafe {
-                                                if (!downloadUpdate(update.updateURL))
+                                                if (!downloadUpdate(update.updateURL, true)) {
+                                                    // Save downloaded APK info
+                                                    val downloadedFile = File.createTempFile("CloudStream", ".apk")
+                                                    val prefs = PreferenceManager.getDefaultSharedPreferences(this@runAutoUpdate)
+                                                    prefs.edit()
+                                                        .putString("downloaded_apk_path", downloadedFile.absolutePath)
+                                                        .putString("downloaded_apk_version", update.updateVersion)
+                                                        .apply()
+                                                }
                                                     runOnUiThread {
                                                         showToast(
                                                             R.string.download_failed,
