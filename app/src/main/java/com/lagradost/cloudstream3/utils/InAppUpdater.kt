@@ -1,24 +1,20 @@
 package com.lagradost.cloudstream3.utils
 
 import android.app.Activity
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
-import android.os.Build
+import android.net.Uri
 import android.text.TextUtils
 import android.util.Log
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
+import androidx.core.content.PackageManagerCompat.LOG_TAG
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.BuildConfig
+import com.lagradost.cloudstream3.CommonActivity.showToast
+import com.lagradost.cloudstream3.MainActivity.Companion.deleteFileOnExit
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
@@ -27,7 +23,11 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.Coroutines.ioSafe
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import okio.BufferedSink
+import okio.buffer
+import okio.sink
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
@@ -35,22 +35,6 @@ import java.io.InputStreamReader
 
 class InAppUpdater {
     companion object {
-        private const val NOTIFICATION_ID = 8975
-        private const val UPDATE_CHANNEL_ID = "app_updates"
-        private const val UPDATE_CHANNEL_NAME = "App Updates"
-        private val updateMutex = Mutex()
-
-        // Define missing string resources (add these to strings.xml)
-        private const val INSTALL_UPDATE = "Install Update"
-        private const val DOWNLOAD_STARTED = "Download started"
-
-        private data class UpdateInfo(
-            @JsonProperty("version") val version: String?,
-            @JsonProperty("versionCode") val versionCode: Int?,
-            @JsonProperty("changelog") val changelog: String?,
-            @JsonProperty("downloadUrl") val downloadUrl: String?
-        )
-
         private const val GITHUB_USER_NAME = "codeiva4u"
         private const val GITHUB_REPO = "crv"
         private const val LOG_TAG = "InAppUpdater"
@@ -133,6 +117,7 @@ class InAppUpdater {
                         }
                     }
                 }).toList()
+
             val found = foundList.lastOrNull()
             val foundAsset = found?.assets?.getOrNull(0)
             val currentVersion = packageName?.let {
@@ -141,6 +126,7 @@ class InAppUpdater {
                     0
                 )
             }
+
             foundAsset?.name?.let { assetName ->
                 val foundVersion = versionRegex.find(assetName)
                 val shouldUpdate =
@@ -153,6 +139,7 @@ class InAppUpdater {
                             it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
                     )!! < 0 else false
+
                 return if (foundVersion != null) {
                     Update(
                         shouldUpdate,
@@ -182,9 +169,11 @@ class InAppUpdater {
             val foundAsset = found?.assets?.filter { it ->
                 it.contentType == "application/vnd.android.package-archive"
             }?.getOrNull(0)
+
             val tagResponse =
                 parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
             Log.d(LOG_TAG, "Fetched GitHub tag: ${tagResponse.githubObject.sha.take(7)}")
+
             val shouldUpdate =
                 (getString(R.string.commit_hash)
                     .trim { c -> c.isWhitespace() }
@@ -193,6 +182,7 @@ class InAppUpdater {
                         tagResponse.githubObject.sha
                             .trim { c -> c.isWhitespace() }
                             .take(7))
+
             return if (foundAsset != null) {
                 Update(
                     shouldUpdate,
@@ -206,109 +196,132 @@ class InAppUpdater {
             }
         }
 
-        private suspend fun Activity.downloadUpdate(url: String, silent: Boolean = false): Boolean {
-            return withContext(Dispatchers.IO) {
+        private val updateLock = Mutex()
+
+        private suspend fun Activity.downloadUpdate(url: String, autoInstall: Boolean = false): Boolean {
+            try {
+                Log.d(LOG_TAG, "Downloading update: $url")
+                val appUpdateName = "CloudStream"
+                val appUpdateSuffix = "apk"
+
+                // Delete all old updates
+                this.cacheDir.listFiles()?.filter {
+                    it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
+                }?.forEach {
+                    deleteFileOnExit(it)
+                }
+
+                val downloadedFile =
+                    withContext(Dispatchers.IO) {
+                        File.createTempFile(appUpdateName, ".$appUpdateSuffix")
+                    }
+
+                val sink: BufferedSink = downloadedFile.sink().buffer()
+                updateLock.withLock {
+                    sink.writeAll(app.get(url).body.source())
+                    sink.close()
+                    if (autoInstall) {
+                        openApk(this, Uri.fromFile(downloadedFile))
+                    }
+                }
+                return true
+            } catch (e: Exception) {
+                return false
+            }
+        }
+
+        fun Activity.showInstallDialog(apkPath: String, apkVersion: String) {
+            val downloadedFile = File(apkPath)
+            if (!downloadedFile.exists()) {
+                showToast(getString(R.string.update_file_missing), Toast.LENGTH_LONG)
+                return
+            }
+
+            val currentVersion = this.packageName?.let {
+                this.packageManager.getPackageInfo(it, 0)?.versionName
+            }
+
+            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+            builder.setTitle(
+                getString(R.string.install_update_format).format(
+                    currentVersion,
+                    apkVersion
+                )
+            )
+            builder.setMessage(this.getString(R.string.ready_to_install_message))
+            builder.setPositiveButton(this.getString(R.string.installing_update)) { dialog: DialogInterface, _: Int ->
+                openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
+                dialog.dismiss()
+            }
+            builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
+                dialog.dismiss()
+            }
+
+            val dialog = builder.create()
+            dialog.show()
+            dialog.setDefaultFocus()
+        }
+
+        private fun openApk(context: Activity, uri: Uri) {
+            try {
+                uri.path?.let {
+                    val contentUri = FileProvider.getUriForFile(
+                        context,
+                        BuildConfig.APPLICATION_ID + ".provider",
+                        File(it)
+                    )
+                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
+                        data = contentUri
+                    }
+                    context.startActivity(installIntent)
+                }
+            } catch (e: Exception) {
+                logError(e)
+            }
+        }
+
+        private fun Activity.showUpdateNotification(updateVersion: String?) {
+            val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
+            val apkPath = settingsManager.getString("downloaded_apk_path", null)
+            val apkVersion = settingsManager.getString("downloaded_apk_version", null)
+
+            if (apkPath == null || apkVersion == null) {
+                Log.e(LOG_TAG, "Downloaded APK path or version missing for notification")
+                return
+            }
+
+            runOnUiThread {
                 try {
-                    val downloadDir = getExternalFilesDir("updates") ?: return@withContext false
-                    val apkFile = File(downloadDir, "update.apk")
-                    if (!silent) {
-                        runOnUiThread {
-                            showProgressDialog(getString(R.string.update_progress_downloading))
-                        }
+                    val currentVersion = packageName?.let {
+                        packageManager.getPackageInfo(
+                            it,
+                            0
+                        )
                     }
-                    val success = downloadFile(url, apkFile) { progress ->
-                        if (!silent) {
-                            runOnUiThread {
-                                updateProgressDialog(progress)
-                            }
-                        }
+
+                    val builder: AlertDialog.Builder = AlertDialog.Builder(this)
+                    builder.setTitle(getString(R.string.update_available_notification_title))
+                    builder.setMessage(getString(R.string.update_available_notification_message))
+                    builder.setPositiveButton(R.string.install_update) { _, _ ->
+                        showInstallDialog(apkPath, apkVersion)
                     }
-                    if (success) {
-                        if (!silent) {
-                            runOnUiThread {
-                                dismissProgressDialog()
-                                showInstallPrompt(apkFile)
-                            }
-                        } else {
-                            showUpdateNotification()
-                        }
-                        true
-                    } else {
-                        if (!silent) {
-                            runOnUiThread {
-                                dismissProgressDialog()
-                                showToast(R.string.download_failed, Toast.LENGTH_LONG)
-                            }
-                        }
-                        false
+                    builder.setNegativeButton(R.string.cancel_update) { dialog, _ ->
+                        dialog.dismiss()
                     }
+                    builder.setNeutralButton(R.string.skip_this_update) { _, _ ->
+                        settingsManager.edit().putString(
+                            getString(R.string.skip_update_key),
+                            updateVersion ?: ""
+                        ).apply()
+                    }
+                    builder.show().setDefaultFocus()
                 } catch (e: Exception) {
                     logError(e)
-                    if (!silent) {
-                        runOnUiThread {
-                            dismissProgressDialog()
-                            showToast(e.message ?: getString(R.string.error), Toast.LENGTH_LONG)
-                        }
-                    }
-                    false
                 }
             }
-        }
-
-        private fun Activity.showInstallPrompt(apkFile: File) {
-            val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                data = FileProvider.getUriForFile(
-                    this@showInstallPrompt,
-                    "${packageName}.fileprovider",
-                    apkFile
-                )
-            }
-            startActivity(installIntent)
-        }
-
-        private fun Activity.showUpdateNotification() {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(
-                    UPDATE_CHANNEL_ID,
-                    UPDATE_CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_HIGH
-                )
-                notificationManager.createNotificationChannel(channel)
-            }
-            val skipIntent = Intent(this, UpdateReceiver::class.java).apply {
-                action = "SKIP_UPDATE"
-            }
-            val cancelIntent = Intent(this, UpdateReceiver::class.java).apply {
-                action = "CANCEL_UPDATE"
-            }
-            val installIntent = Intent(this, UpdateReceiver::class.java).apply {
-                action = "INSTALL_UPDATE"
-            }
-            val notification = NotificationCompat.Builder(this, UPDATE_CHANNEL_ID)
-                .setContentTitle(getString(R.string.update_available_title))
-                .setContentText(getString(R.string.update_available_message))
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .addAction(
-                    android.R.drawable.ic_media_pause,
-                    getString(R.string.skip_update_button),
-                    PendingIntent.getBroadcast(this, 0, skipIntent, PendingIntent.FLAG_IMMUTABLE)
-                )
-                .addAction(
-                    android.R.drawable.ic_media_pause,
-                    getString(R.string.cancel_update_button),
-                    PendingIntent.getBroadcast(this, 1, cancelIntent, PendingIntent.FLAG_IMMUTABLE)
-                )
-                .addAction(
-                    android.R.drawable.ic_media_play,
-                    getString(R.string.install_update_button),
-                    PendingIntent.getBroadcast(this, 2, installIntent, PendingIntent.FLAG_IMMUTABLE)
-                )
-                .setAutoCancel(true)
-                .build()
-            notificationManager.notify(NOTIFICATION_ID, notification)
         }
 
         /**
@@ -316,69 +329,67 @@ class InAppUpdater {
          */
         suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true): Boolean {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-            if (!checkAutoUpdate || settingsManager.getBoolean(getString(R.string.auto_update_key), true)) {
+
+            // Check for existing downloaded APK
+            val apkPath = settingsManager.getString("downloaded_apk_path", null)
+            val apkVersion = settingsManager.getString("downloaded_apk_version", null)
+
+            if (!checkAutoUpdate && apkPath != null && apkVersion != null) {
+                // Show install dialog if downloaded APK exists and not auto-update check
+                runOnUiThread {
+                    try {
+                        showInstallDialog(apkPath, apkVersion)
+                        settingsManager.edit()
+                            .remove("downloaded_apk_path")
+                            .remove("downloaded_apk_version")
+                            .apply()
+                    } catch (e: Exception) {
+                        logError(e)
+                    }
+                }
+                return true
+            }
+
+            if (!checkAutoUpdate || settingsManager.getBoolean(
+                    getString(R.string.auto_update_key),
+                    true
+                )
+            ) {
                 val update = getAppUpdate()
-                if (update.shouldUpdate && update.updateURL != null) {
+                if (
+                    update.shouldUpdate &&
+                    update.updateURL != null
+                ) {
                     // Check if update should be skipped
-                    val updateNodeId = settingsManager.getString(getString(R.string.skip_update_key), "")
+                    val updateNodeId =
+                        settingsManager.getString(getString(R.string.skip_update_key), "")
                     // Skips the update if its an automatic update and the update is skipped
+                    // This allows updating manually
                     if (update.updateNodeId.equals(updateNodeId) && checkAutoUpdate) {
                         return false
                     }
-                    // Start silent download if auto-update is enabled
-                    if (checkAutoUpdate) {
-                        ioSafe {
-                            downloadUpdate(update.updateURL, true)
+
+                    // Start silent download in background
+                    ioSafe {
+                        if (downloadUpdate(update.updateURL, false)) {
+                            // Save downloaded APK info for notification
+                            settingsManager.edit()
+                                .putString("downloaded_apk_path", cacheDir.absolutePath + "/CloudStream.apk") // Assuming default download path
+                                .putString("downloaded_apk_version", update.updateVersion)
+                                .apply()
+                            // Show notification to user about available update
+                            Log.d(LOG_TAG, "Update downloaded silently in background")
+                            // Show notification
+                            showUpdateNotification(update.updateVersion)
+                        } else {
+                            Log.e(LOG_TAG, "Update download failed during silent download")
                         }
                     }
-                    runOnUiThread {
-                        try {
-                            val currentVersion = packageName?.let {
-                                packageManager.getPackageInfo(
-                                    it,
-                                    0
-                                )
-                            }
-                            val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-                            builder.setTitle(
-                                getString(R.string.new_update_format).format(
-                                    currentVersion?.versionName,
-                                    update.updateVersion
-                                )
-                            )
-                            val logRegex = Regex("\\[(.*?)\\]\\((.*?)\\)")
-                            val sanitizedChangelog = update.changelog?.replace(logRegex) { matchResult ->
-                                matchResult.groupValues[1]
-                            }
-                            builder.setMessage(sanitizedChangelog)
-                            builder.apply {
-                                setPositiveButton(INSTALL_UPDATE) { _, _ ->
-                                    showToast(DOWNLOAD_STARTED, Toast.LENGTH_LONG)
-                                    ioSafe {
-                                        downloadUpdate(update.updateURL, false)
-                                    }
-                                }
-                                setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                                    dialog.dismiss()
-                                }
-                                if (checkAutoUpdate) {
-                                    setNeutralButton(getString(R.string.skip_update)) { _, _ ->
-                                        settingsManager.edit().putString(
-                                            getString(R.string.skip_update_key),
-                                            update.updateNodeId ?: ""
-                                        ).apply()
-                                    }
-                                }
-                            }
-                            builder.show().setDefaultFocus()
-                        } catch (e: Exception) {
-                            logError(e)
-                        }
-                    }
-                    return true
+                    return true // Indicate update check was performed and download started (or skipped)
                 }
+                return false // No update available
             }
-            return false
+            return false // Auto-update is disabled
         }
 
         private fun isMiUi(): Boolean {
@@ -393,106 +404,6 @@ class InAppUpdater {
                 }
             } catch (ex: IOException) {
                 null
-            }
-        }
-
-        private var progressDialog: AlertDialog? = null
-
-        private fun Activity.showProgressDialog(message: String) {
-            progressDialog?.dismiss()
-            progressDialog = AlertDialog.Builder(this)
-                .setTitle(R.string.update_progress_title)
-                .setView(R.layout.dialog_update_progress)
-                .setCancelable(false)
-                .create()
-                .apply {
-                    show()
-                    findViewById<TextView>(R.id.txt_status)?.text = message
-                }
-        }
-
-        private fun Activity.updateProgressDialog(progress: Int) {
-            progressDialog?.run {
-                findViewById<ProgressBar>(R.id.progress_bar)?.progress = progress
-                findViewById<TextView>(R.id.txt_percent)?.text = "$progress%"
-            }
-        }
-
-        private fun dismissProgressDialog() {
-            progressDialog?.dismiss()
-            progressDialog = null
-        }
-
-        private suspend fun downloadFile(url: String, destination: File, progressCallback: (Int) -> Unit): Boolean {
-            return withContext(Dispatchers.IO) {
-                try {
-                    val response = app.get(url)
-                    val body = response.body
-                    val contentLength = body.contentLength()
-                    destination.outputStream().use { output ->
-                        body.source().use { source ->
-                            var bytesRead: Long = 0
-                            val buffer = ByteArray(8192)
-                            var bytes = source.read(buffer)
-                            while (bytes >= 0) {
-                                output.write(buffer, 0, bytes)
-                                bytesRead += bytes
-                                val progress = ((bytesRead * 100) / contentLength).toInt()
-                                progressCallback(progress)
-                                bytes = source.read(buffer)
-                            }
-                        }
-                    }
-                    true
-                } catch (e: Exception) {
-                    logError(e)
-                    false
-                }
-            }
-        }
-
-        // Define showToast function
-        private fun Activity.showToast(message: String, duration: Int) {
-            Toast.makeText(this, message, duration).show()
-        }
-
-        private fun Activity.showToast(resId: Int, duration: Int) {
-            Toast.makeText(this, getString(resId), duration).show()
-        }
-
-        class UpdateReceiver : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                when (intent.action) {
-                    "SKIP_UPDATE" -> {
-                        // Save skip version to preferences
-                        PreferenceManager.getDefaultSharedPreferences(context)
-                            .edit()
-                            .putString("skipped_version", BuildConfig.VERSION_NAME)
-                            .apply()
-                    }
-                    "CANCEL_UPDATE" -> {
-                        // Clear downloaded file and notification
-                        context.getExternalFilesDir("updates")?.listFiles()?.forEach { it.delete() }
-                        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-                            .cancel(NOTIFICATION_ID)
-                    }
-                    "INSTALL_UPDATE" -> {
-                        // Start installation
-                        val apkFile = File(context.getExternalFilesDir("updates"), "update.apk")
-                        if (apkFile.exists()) {
-                            val installIntent = Intent(Intent.ACTION_VIEW).apply {
-                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                data = FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    apkFile
-                                )
-                            }
-                            context.startActivity(installIntent)
-                        }
-                    }
-                }
             }
         }
     }
