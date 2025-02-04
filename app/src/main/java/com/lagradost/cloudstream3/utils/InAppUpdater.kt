@@ -120,12 +120,12 @@ class InAppUpdater {
                     !rel.prerelease
                 }.sortedWith(compareBy { release ->
                     release.assets.firstOrNull { it.contentType == "application/vnd.android.package-archive" }?.name?.let { it1 ->
-                            versionRegex.find(
-                                it1
-                            )?.groupValues?.let {
-                                it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
-                            }
+                        versionRegex.find(
+                            it1
+                        )?.groupValues?.let {
+                            it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
+                    }
                 }).toList()
             val found = foundList.lastOrNull()
             val foundAsset = found?.assets?.getOrNull(0)
@@ -259,18 +259,18 @@ class InAppUpdater {
                     apkVersion
                 )
             )
-            
+
             builder.setMessage(this.getString(R.string.ready_to_install_message))
-            
+
             builder.setPositiveButton(this.getString(R.string.install)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
             }
-            
+
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
             }
-            
+
             val dialog = builder.create()
             dialog.show()
             dialog.setDefaultFocus()
@@ -302,7 +302,7 @@ class InAppUpdater {
          **/
         suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true): Boolean {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-            
+
             // Check for existing downloaded APK
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
@@ -329,7 +329,7 @@ class InAppUpdater {
                 val update = getAppUpdate()
                 if (
                     update.shouldUpdate &&
-                        update.updateURL != null) {
+                    update.updateURL != null) {
 
                     // Check if update should be skipped
                     val updateNodeId =
@@ -412,12 +412,12 @@ class InAppUpdater {
                                                         .putString("downloaded_apk_version", update.updateVersion)
                                                         .apply()
                                                 }
-                                                    runOnUiThread {
-                                                        showToast(
-                                                            R.string.download_failed,
-                                                            Toast.LENGTH_LONG
-                                                        )
-                                                    }
+                                                runOnUiThread {
+                                                    showToast(
+                                                        R.string.download_failed,
+                                                        Toast.LENGTH_LONG
+                                                    )
+                                                }
                                             }
                                         }
                                     }
