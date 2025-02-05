@@ -90,27 +90,24 @@ class InAppUpdater {
         private suspend fun Activity.getReleaseUpdate(): Update {
             val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
-            val response =
-                parseJson<List<GithubRelease>>(
-                    app.get(url, headers = headers).text
-                )
+            val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
+
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
-            val foundList =
-                response.filter { rel ->
-                    !rel.prerelease
-                }.sortedWith(compareBy { release ->
-                    release.assets.firstOrNull { it.contentType == "application/vnd.android.package-archive" }?.name?.let { it1 ->
-                        versionRegex.find(it1)?.groupValues?.let {
+
+            val foundList = response.filter { !it.prerelease }
+                .sortedWith(compareBy { release ->
+                    release.assets.firstOrNull { it.contentType == "application/vnd.android.package-archive" }?.name?.let {
+                        versionRegex.find(it)?.groupValues?.let {
                             it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
                     }
                 }).toList()
+
             val found = foundList.lastOrNull()
             val foundAsset = found?.assets?.getOrNull(0)
-            val currentVersion = packageName?.let {
-                packageManager.getPackageInfo(it, 0)
-            }
+            val currentVersion = packageName?.let { packageManager.getPackageInfo(it, 0) }
+
             foundAsset?.name?.let { assetName ->
                 val foundVersion = versionRegex.find(assetName)
                 val shouldUpdate =
@@ -123,6 +120,7 @@ class InAppUpdater {
                             it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
                     )!! < 0 else false
+
                 return if (foundVersion != null) {
                     Update(
                         shouldUpdate,
@@ -139,30 +137,21 @@ class InAppUpdater {
         }
 
         private suspend fun Activity.getPreReleaseUpdate(): Update {
-            val tagUrl =
-                "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
+            val tagUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
             val releaseUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
-            val response =
-                parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
-            val found =
-                response.lastOrNull { rel ->
-                    rel.prerelease || rel.tagName == "pre-release"
-                }
-            val foundAsset = found?.assets?.filter { it ->
-                it.contentType == "application/vnd.android.package-archive"
-            }?.getOrNull(0)
-            val tagResponse =
-                parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
+
+            val response = parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
+            val found = response.lastOrNull { it.prerelease || it.tagName == "pre-release" }
+            val foundAsset = found?.assets?.filter { it.contentType == "application/vnd.android.package-archive" }?.getOrNull(0)
+            val tagResponse = parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
+
             Log.d(LOG_TAG, "Fetched GitHub tag: ${tagResponse.githubObject.sha.take(7)}")
+
             val shouldUpdate =
-                (getString(R.string.commit_hash)
-                    .trim { c -> c.isWhitespace() }
-                    .take(7)
-                        !=
-                        tagResponse.githubObject.sha
-                            .trim { c -> c.isWhitespace() }
-                            .take(7))
+                getString(R.string.commit_hash).trim { it.isWhitespace() }.take(7) !=
+                        tagResponse.githubObject.sha.trim { it.isWhitespace() }.take(7)
+
             return if (foundAsset != null) {
                 Update(
                     shouldUpdate,
@@ -183,16 +172,18 @@ class InAppUpdater {
                 Log.d(LOG_TAG, "Downloading update: $url")
                 val appUpdateName = "CloudStream"
                 val appUpdateSuffix = "apk"
+
                 // Delete all old updates
                 this.cacheDir.listFiles()?.filter {
                     it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
                 }?.forEach {
                     deleteFileOnExit(it)
                 }
-                val downloadedFile =
-                    withContext(Dispatchers.IO) {
-                        File.createTempFile(appUpdateName, ".$appUpdateSuffix", cacheDir)
-                    }
+
+                val downloadedFile = withContext(Dispatchers.IO) {
+                    File.createTempFile(appUpdateName, ".$appUpdateSuffix", cacheDir)
+                }
+
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
                     sink.writeAll(app.get(url).body.source())
@@ -214,9 +205,11 @@ class InAppUpdater {
                 showToast(getString(R.string.update_file_missing), Toast.LENGTH_LONG)
                 return
             }
+
             val currentVersion = this.packageName?.let {
                 this.packageManager.getPackageInfo(it, 0)?.versionName
             }
+
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
             builder.setTitle(
                 getString(R.string.install_update_format).format(
@@ -224,13 +217,16 @@ class InAppUpdater {
                     apkVersion
                 )
             )
+
             builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
             }
+
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
             }
+
             val dialog = builder.create()
             dialog.show()
             dialog.setDefaultFocus()
@@ -312,7 +308,6 @@ class InAppUpdater {
 
         suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true): Boolean {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-
             // Check for existing downloaded APK
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
@@ -335,7 +330,6 @@ class InAppUpdater {
                 )
             ) {
                 val update = getAppUpdate()
-
                 if (update.shouldUpdate && update.updateURL != null) {
                     // Check if already downloaded same version
                     val downloadedVersion = settingsManager.getString("downloaded_apk_version", null)
@@ -353,7 +347,6 @@ class InAppUpdater {
                     ioSafe {
                         try {
                             val downloadedFile = downloadUpdate(update.updateURL, false)
-
                             // Save downloaded APK info for notification
                             val apkPath = downloadedFile.absolutePath
                             settingsManager.edit()
@@ -361,7 +354,6 @@ class InAppUpdater {
                                 .putString("downloaded_apk_version", update.updateVersion)
                                 .putString("changelog", update.changelog) // Save changelog
                                 .apply()
-
                             Log.d(LOG_TAG, "Saved APK path: $apkPath")
                             downloadedFile.deleteOnExit() // Ensure file persists until installation
 
@@ -378,6 +370,5 @@ class InAppUpdater {
             }
             return false // Auto-update is disabled
         }
-
     }
 }
