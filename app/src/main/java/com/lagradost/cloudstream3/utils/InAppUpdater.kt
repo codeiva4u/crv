@@ -9,7 +9,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.FileProvider
-import androidx.core.content.PackageManagerCompat.LOG_TAG
 import androidx.preference.PreferenceManager
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.BuildConfig
@@ -104,7 +103,6 @@ class InAppUpdater {
                 )
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
-
             val foundList =
                 response.filter { rel ->
                     !rel.prerelease
@@ -117,7 +115,6 @@ class InAppUpdater {
                         }
                     }
                 }).toList()
-
             val found = foundList.lastOrNull()
             val foundAsset = found?.assets?.getOrNull(0)
             val currentVersion = packageName?.let {
@@ -126,7 +123,6 @@ class InAppUpdater {
                     0
                 )
             }
-
             foundAsset?.name?.let { assetName ->
                 val foundVersion = versionRegex.find(assetName)
                 val shouldUpdate =
@@ -139,7 +135,6 @@ class InAppUpdater {
                             it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
                     )!! < 0 else false
-
                 return if (foundVersion != null) {
                     Update(
                         shouldUpdate,
@@ -169,11 +164,9 @@ class InAppUpdater {
             val foundAsset = found?.assets?.filter { it ->
                 it.contentType == "application/vnd.android.package-archive"
             }?.getOrNull(0)
-
             val tagResponse =
                 parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
             Log.d(LOG_TAG, "Fetched GitHub tag: ${tagResponse.githubObject.sha.take(7)}")
-
             val shouldUpdate =
                 (getString(R.string.commit_hash)
                     .trim { c -> c.isWhitespace() }
@@ -182,7 +175,6 @@ class InAppUpdater {
                         tagResponse.githubObject.sha
                             .trim { c -> c.isWhitespace() }
                             .take(7))
-
             return if (foundAsset != null) {
                 Update(
                     shouldUpdate,
@@ -198,24 +190,21 @@ class InAppUpdater {
 
         private val updateLock = Mutex()
 
-        private suspend fun Activity.downloadUpdate(url: String, autoInstall: Boolean = false): Boolean {
+        private suspend fun Activity.downloadUpdate(url: String, autoInstall: Boolean = false): File {
             try {
                 Log.d(LOG_TAG, "Downloading update: $url")
                 val appUpdateName = "CloudStream"
                 val appUpdateSuffix = "apk"
-
                 // Delete all old updates
                 this.cacheDir.listFiles()?.filter {
                     it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
                 }?.forEach {
                     deleteFileOnExit(it)
                 }
-
                 val downloadedFile =
                     withContext(Dispatchers.IO) {
-                        File.createTempFile(appUpdateName, ".$appUpdateSuffix")
+                        File.createTempFile(appUpdateName, ".$appUpdateSuffix", cacheDir)
                     }
-
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
                     sink.writeAll(app.get(url).body.source())
@@ -224,9 +213,10 @@ class InAppUpdater {
                         openApk(this, Uri.fromFile(downloadedFile))
                     }
                 }
-                return true
+                return downloadedFile
             } catch (e: Exception) {
-                return false
+                Log.e(LOG_TAG, "Failed to download update: ${e.message}")
+                throw e
             }
         }
 
@@ -236,11 +226,9 @@ class InAppUpdater {
                 showToast(getString(R.string.update_file_missing), Toast.LENGTH_LONG)
                 return
             }
-
             val currentVersion = this.packageName?.let {
                 this.packageManager.getPackageInfo(it, 0)?.versionName
             }
-
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
             builder.setTitle(
                 getString(R.string.install_update_format).format(
@@ -256,7 +244,6 @@ class InAppUpdater {
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
             }
-
             val dialog = builder.create()
             dialog.show()
             dialog.setDefaultFocus()
@@ -287,12 +274,10 @@ class InAppUpdater {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
-
             if (apkPath == null || apkVersion == null) {
                 Log.e(LOG_TAG, "Downloaded APK path or version missing for notification")
                 return
             }
-
             runOnUiThread {
                 try {
                     val currentVersion = packageName?.let {
@@ -301,7 +286,6 @@ class InAppUpdater {
                             0
                         )
                     }
-
                     val builder: AlertDialog.Builder = AlertDialog.Builder(this)
                     builder.setTitle(getString(R.string.update_available_notification_title))
                     builder.setMessage(getString(R.string.update_available_notification_message))
@@ -329,11 +313,9 @@ class InAppUpdater {
          */
         suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true): Boolean {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-
             // Check for existing downloaded APK
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
-
             if (!checkAutoUpdate && apkPath != null && apkVersion != null) {
                 // Show install dialog if downloaded APK exists and not auto-update check
                 runOnUiThread {
@@ -349,7 +331,6 @@ class InAppUpdater {
                 }
                 return true
             }
-
             if (!checkAutoUpdate || settingsManager.getBoolean(
                     getString(R.string.auto_update_key),
                     true
@@ -365,7 +346,6 @@ class InAppUpdater {
                     if (downloadedVersion == update.updateVersion && checkAutoUpdate) {
                         return false // Already have this version, skip download
                     }
-                    
                     // Check if update should be skipped
                     val updateNodeId =
                         settingsManager.getString(getString(R.string.skip_update_key), "")
@@ -374,21 +354,24 @@ class InAppUpdater {
                     if (update.updateNodeId.equals(updateNodeId) && checkAutoUpdate) {
                         return false
                     }
-
                     // Start silent download in background
                     ioSafe {
-                        if (downloadUpdate(update.updateURL, false)) {
+                        try {
+                            val downloadedFile = downloadUpdate(update.updateURL, false)
                             // Save downloaded APK info for notification
+                            val apkPath = downloadedFile.absolutePath
                             settingsManager.edit()
-                                .putString("downloaded_apk_path", cacheDir.absolutePath + "/CloudStream.apk") // Assuming default download path
+                                .putString("downloaded_apk_path", apkPath)
                                 .putString("downloaded_apk_version", update.updateVersion)
                                 .apply()
+                            Log.d(LOG_TAG, "Saved APK path: $apkPath")
+                            downloadedFile.deleteOnExit() // Ensure file persists until installation
                             // Show notification to user about available update
                             Log.d(LOG_TAG, "Update downloaded silently in background")
                             // Show notification
                             showUpdateNotification(update.updateVersion)
-                        } else {
-                            Log.e(LOG_TAG, "Update download failed during silent download")
+                        } catch (e: Exception) {
+                            Log.e(LOG_TAG, "Update download failed during silent download: ${e.message}")
                         }
                     }
                     return true // Indicate update check was performed and download started (or skipped)
