@@ -838,7 +838,7 @@
     <string name="skip_this_update">Skip This Update</string>
     <string name="cancel_update">Cancel Update</string>
     <string name="install_update">Install Update</string>
-    <string name="installing_update">Installing Update...</string>
+
     <string name="update_progress_percentage">%d%%</string>
     <string name="update_file_missing">Update File Missing</string>
     <string name="install_update_format">Install Update Format</string>

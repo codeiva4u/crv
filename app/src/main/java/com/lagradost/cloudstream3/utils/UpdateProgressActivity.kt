@@ -5,15 +5,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.services.PackageInstallerService
-import org.schabi.newpipe.extractor.timeago.patterns.it
 
 class UpdateProgressActivity : Activity() {
-
     private lateinit var progressBar: ProgressBar
     private lateinit var progressPercentageText: TextView
     private lateinit var statusText: TextView
@@ -26,8 +26,8 @@ class UpdateProgressActivity : Activity() {
         progressPercentageText = findViewById(R.id.update_progress_percentage_text)
         statusText = findViewById(R.id.update_status_text)
 
-        // TODO: Set progress and status updates here
-        updateProgress(0) // Initialize progress to 0%
+        // Initialize progress to 0%
+        updateProgress(0)
     }
 
     private fun updateProgress(progress: Int) {
@@ -59,18 +59,26 @@ class UpdateProgressActivity : Activity() {
     private fun getStatusStringResource(status: ApkInstaller.InstallProgressStatus): Int {
         return when (status) {
             ApkInstaller.InstallProgressStatus.Downloading -> R.string.update_notification_downloading
-            ApkInstaller.InstallProgressStatus.Installing -> R.string.update_notification_installing
-            ApkInstaller.InstallProgressStatus.Preparing -> R.string.installing_update // You might want a different string for preparing
+            ApkInstaller.InstallProgressStatus.Installing -> R.string.install_update
+            ApkInstaller.InstallProgressStatus.Preparing -> R.string.install_update
             ApkInstaller.InstallProgressStatus.Finished -> R.string.download_done
             ApkInstaller.InstallProgressStatus.Failed -> R.string.update_notification_failed
-            else -> R.string.installing_update // Default status string
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onStart() {
         super.onStart()
-        registerReceiver(progressReceiver, IntentFilter(PackageInstallerService.PROGRESS_UPDATE_ACTION))
-        registerReceiver(statusReceiver, IntentFilter(PackageInstallerService.STATUS_UPDATE_ACTION))
+        registerReceiver(
+            progressReceiver,
+            IntentFilter(PackageInstallerService.PROGRESS_UPDATE_ACTION),
+            Context.RECEIVER_NOT_EXPORTED
+        )
+        registerReceiver(
+            statusReceiver,
+            IntentFilter(PackageInstallerService.STATUS_UPDATE_ACTION),
+            Context.RECEIVER_NOT_EXPORTED
+        )
     }
 
     override fun onStop() {

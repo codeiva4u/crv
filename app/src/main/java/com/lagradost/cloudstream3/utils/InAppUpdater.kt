@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
-import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -27,10 +26,7 @@ import kotlinx.coroutines.withContext
 import okio.BufferedSink
 import okio.buffer
 import okio.sink
-import java.io.BufferedReader
 import java.io.File
-import java.io.IOException
-import java.io.InputStreamReader
 
 class InAppUpdater {
     companion object {
@@ -228,7 +224,7 @@ class InAppUpdater {
                     apkVersion
                 )
             )
-            builder.setPositiveButton(this.getString(R.string.installing_update)) { dialog: DialogInterface, _: Int ->
+            builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
             }
@@ -383,19 +379,5 @@ class InAppUpdater {
             return false // Auto-update is disabled
         }
 
-        private fun isMiUi(): Boolean {
-            return !TextUtils.isEmpty(getSystemProperty("ro.miui.ui.version.name"))
-        }
-
-        private fun getSystemProperty(propName: String): String? {
-            return try {
-                val p = Runtime.getRuntime().exec("getprop $propName")
-                BufferedReader(InputStreamReader(p.inputStream), 1024).use {
-                    it.readLine()
-                }
-            } catch (ex: IOException) {
-                null
-            }
-        }
     }
 }

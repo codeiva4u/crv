@@ -24,6 +24,6 @@
         android:id="@+id/update_status_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/installing_update" />
+        android:text="@string/install_update" />
 
 </LinearLayout>
