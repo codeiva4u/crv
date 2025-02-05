@@ -360,6 +360,12 @@ class InAppUpdater {
                     update.shouldUpdate &&
                     update.updateURL != null
                 ) {
+                    // Check if already downloaded same version
+                    val downloadedVersion = settingsManager.getString("downloaded_apk_version", null)
+                    if (downloadedVersion == update.updateVersion && checkAutoUpdate) {
+                        return false // Already have this version, skip download
+                    }
+                    
                     // Check if update should be skipped
                     val updateNodeId =
                         settingsManager.getString(getString(R.string.skip_update_key), "")
