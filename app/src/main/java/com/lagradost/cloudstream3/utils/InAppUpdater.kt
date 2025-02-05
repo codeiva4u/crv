@@ -140,7 +140,6 @@ class InAppUpdater {
             val tagUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
             val releaseUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
-
             val response = parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
             val found = response.lastOrNull { it.prerelease || it.tagName == "pre-release" }
             val foundAsset = found?.assets?.filter { it.contentType == "application/vnd.android.package-archive" }?.getOrNull(0)
@@ -211,13 +210,7 @@ class InAppUpdater {
             }
 
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-            builder.setTitle(
-                getString(R.string.install_update_format).format(
-                    currentVersion,
-                    apkVersion
-                )
-            )
-
+            builder.setTitle("Install Update from $currentVersion to $apkVersion") // Modified line
             builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
