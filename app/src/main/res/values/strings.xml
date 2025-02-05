@@ -842,5 +842,4 @@
     <string name="update_progress_percentage">%d%%</string>
     <string name="update_file_missing">Update File Missing</string>
     <string name="install_update_format">Install Update Format</string>
-    <string name="ready_to_install_message">Ready To Install Message</string>
 </resources>

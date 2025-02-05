@@ -228,7 +228,6 @@ class InAppUpdater {
                     apkVersion
                 )
             )
-            builder.setMessage(this.getString(R.string.ready_to_install_message))
             builder.setPositiveButton(this.getString(R.string.installing_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
