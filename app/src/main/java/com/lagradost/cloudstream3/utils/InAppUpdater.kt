@@ -96,10 +96,7 @@ class InAppUpdater {
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
                 parseJson<List<GithubRelease>>(
-                    app.get(
-                        url,
-                        headers = headers
-                    ).text
+                    app.get(url, headers = headers).text
                 )
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
@@ -108,9 +105,7 @@ class InAppUpdater {
                     !rel.prerelease
                 }.sortedWith(compareBy { release ->
                     release.assets.firstOrNull { it.contentType == "application/vnd.android.package-archive" }?.name?.let { it1 ->
-                        versionRegex.find(
-                            it1
-                        )?.groupValues?.let {
+                        versionRegex.find(it1)?.groupValues?.let {
                             it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
                     }
@@ -118,10 +113,7 @@ class InAppUpdater {
             val found = foundList.lastOrNull()
             val foundAsset = found?.assets?.getOrNull(0)
             val currentVersion = packageName?.let {
-                packageManager.getPackageInfo(
-                    it,
-                    0
-                )
+                packageManager.getPackageInfo(it, 0)
             }
             foundAsset?.name?.let { assetName ->
                 val foundVersion = versionRegex.find(assetName)
@@ -285,7 +277,10 @@ class InAppUpdater {
                 try {
                     val builder: AlertDialog.Builder = AlertDialog.Builder(this)
                     builder.setTitle(getString(R.string.update_available_notification_title))
-                    builder.setMessage(getString(R.string.update_available_notification_message))
+                    builder.setMessage(
+                        getString(R.string.update_available_notification_message) +
+                                "\n\nChangelog:\n${settingsManager.getString("changelog", "")}"
+                    )
 
                     // Install Update Button
                     builder.setPositiveButton(R.string.install_update) { _, _ ->
@@ -369,6 +364,7 @@ class InAppUpdater {
                             settingsManager.edit()
                                 .putString("downloaded_apk_path", apkPath)
                                 .putString("downloaded_apk_version", update.updateVersion)
+                                .putString("changelog", update.changelog) // Save changelog
                                 .apply()
 
                             Log.d(LOG_TAG, "Saved APK path: $apkPath")
