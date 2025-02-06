@@ -21,13 +21,9 @@ class UpdateProgressActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.update_progress_dialog)
-
-        // Initialize UI elements
         progressBar = findViewById(R.id.update_progress_bar)
         progressPercentageText = findViewById(R.id.update_progress_percentage_text)
         statusText = findViewById(R.id.update_status_text)
-
-        // Set initial progress to 0%
         updateProgress(0)
     }
 
@@ -36,7 +32,7 @@ class UpdateProgressActivity : Activity() {
         progressPercentageText.text = getString(R.string.update_progress_percentage, progress)
     }
 
-    private fun updateStatus(status: String) {
+    fun updateStatus(status: String) {
         statusText.text = status
     }
 

@@ -322,6 +322,6 @@ class DelegatingSubtitleDecoder(name: String, private val parser: SubtitleParser
         if (reset) {
             parser.reset()
         }
-        return parser.parseToLegacySubtitle(data, 0, length);
+        return parser.parseToLegacySubtitle(data, 0, length)
     }
 }

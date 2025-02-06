@@ -27,7 +27,7 @@ import kotlin.math.roundToInt
 
 class PackageInstallerService : Service() {
     private var installer: ApkInstaller? = null
-    private lateinit var progressActivityIntent: Intent // Intent for progress activity
+    private lateinit var progressActivityIntent: Intent
     private val baseNotification by lazy {
         val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             PendingIntent.FLAG_IMMUTABLE
@@ -59,7 +59,6 @@ class PackageInstallerService : Service() {
                 FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         else startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build())
-        // Initialize progress activity intent
         progressActivityIntent = UpdateProgressActivity.intent(this).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
@@ -70,7 +69,6 @@ class PackageInstallerService : Service() {
     private suspend fun downloadUpdate(url: String): Boolean {
         try {
             Log.d("PackageInstallerService", "Downloading update: $url")
-            // Delete all old updates
             ioSafe {
                 val appUpdateName = "CloudStream"
                 val appUpdateSuffix = "apk"
@@ -85,7 +83,6 @@ class PackageInstallerService : Service() {
                     0f,
                     ApkInstaller.InstallProgressStatus.Downloading
                 )
-                // Start progress activity
                 startActivity(progressActivityIntent)
                 val body = app.get(url).body
                 val inputStream = body.byteStream()
@@ -94,44 +91,39 @@ class PackageInstallerService : Service() {
                 var currentSize = 0
                 installer?.installApk(this, inputStream, totalSize, { bytesDownloaded ->
                     currentSize += bytesDownloaded
-                    // Prevent div 0
                     if (totalSize == 0L) return@installApk
                     val percentage = currentSize / totalSize.toFloat()
-                    updateProgressActivity(percentage) // Update progress activity
+                    updateProgressActivity(percentage)
                     updateNotificationProgress(
                         percentage,
                         ApkInstaller.InstallProgressStatus.Downloading
                     )
                 }) { status ->
                     updateNotificationProgress(0f, status)
-                    updateProgressActivityStatus(status) // Update progress activity status
+                    updateProgressActivityStatus(status)
                     if (status == ApkInstaller.InstallProgressStatus.Installing) {
-                        updateProgressActivity(1f) // Max progress for installing
+                        updateProgressActivity(1f)
                     }
                 }
             }
-            restartApp() // Restart app after successful install
+            restartApp()
             return true
         } catch (e: Exception) {
             logError(e)
             updateNotificationProgress(0f, ApkInstaller.InstallProgressStatus.Failed)
-            updateProgressActivityStatus(ApkInstaller.InstallProgressStatus.Failed) // Update progress activity status
+            updateProgressActivityStatus(ApkInstaller.InstallProgressStatus.Failed)
             return false
         }
     }
 
     private fun updateProgressActivity(percentage: Float) {
-        // Update progress in progress activity
         progressActivityIntent.putExtra("progress", percentage)
         sendBroadcast(Intent(PROGRESS_UPDATE_ACTION).putExtra("progress", percentage))
     }
 
     private fun updateProgressActivityStatus(status: ApkInstaller.InstallProgressStatus) {
-        // Update status text in progress activity
         progressActivityIntent.putExtra("status", status.toString())
-        sendBroadcast(
-            Intent(STATUS_UPDATE_ACTION).putExtra("status", status.toString())
-        )
+        sendBroadcast(Intent(STATUS_UPDATE_ACTION).putExtra("status", status.toString()))
     }
 
     private fun updateNotificationProgress(
@@ -159,11 +151,8 @@ class PackageInstallerService : Service() {
                 }
             }
             .build()
-        val notificationManager =
-            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        // Persistent notification on failure
-        val id =
-            if (state == ApkInstaller.InstallProgressStatus.Failed) UPDATE_NOTIFICATION_ID + 1 else UPDATE_NOTIFICATION_ID
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val id = if (state == ApkInstaller.InstallProgressStatus.Failed) UPDATE_NOTIFICATION_ID + 1 else UPDATE_NOTIFICATION_ID
         notificationManager.notify(id, newNotification)
     }
 
@@ -171,7 +160,6 @@ class PackageInstallerService : Service() {
         val url = intent?.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
         ioSafe {
             downloadUpdate(url)
-            // Close the service after the update is done
             delay(10_000)
             this@PackageInstallerService.stopSelf()
         }
@@ -194,29 +182,24 @@ class PackageInstallerService : Service() {
 
     companion object {
         private const val EXTRA_URL = "EXTRA_URL"
-        const val PROGRESS_UPDATE_ACTION = "PROGRESS_UPDATE_ACTION" // Progress update action
-        const val STATUS_UPDATE_ACTION = "STATUS_UPDATE_ACTION"     // Status update action
+        const val PROGRESS_UPDATE_ACTION = "PROGRESS_UPDATE_ACTION"
+        const val STATUS_UPDATE_ACTION = "STATUS_UPDATE_ACTION"
         const val UPDATE_CHANNEL_ID = "cloudstream3.updates"
         const val UPDATE_CHANNEL_NAME = "App Updates"
         const val UPDATE_CHANNEL_DESCRIPTION = "App updates notification channel"
-        const val UPDATE_NOTIFICATION_ID = -68454136 // Random unique
+        const val UPDATE_NOTIFICATION_ID = -68454136
 
-        fun getIntent(
-            context: Context,
-            url: String
-        ): Intent {
-            return Intent(context, PackageInstallerService::class.java)
-                .putExtra(EXTRA_URL, url)
+        fun getIntent(context: Context, url: String): Intent {
+            return Intent(context, PackageInstallerService::class.java).putExtra(EXTRA_URL, url)
         }
 
-        // Add function to restart app
         fun Context.restartApp() {
             val packageManager = packageManager
             val intent = packageManager.getLaunchIntentForPackage(packageName)
             val componentName = intent!!.component
             val mainIntent = Intent.makeRestartActivityTask(componentName)
             startActivity(mainIntent)
-            Runtime.getRuntime().exit(0) // Kill the old process
+            Runtime.getRuntime().exit(0)
         }
     }
 }

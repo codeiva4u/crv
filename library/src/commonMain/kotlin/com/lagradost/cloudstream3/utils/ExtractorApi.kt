@@ -508,7 +508,7 @@ open class DrmExtractorLink private constructor(
  * @property extractorData Used for getExtractorVerifierJob()
  * @property type Extracted link type (Video, M3u8, Dash, Torrent or Magnet)
  * */
-open class ExtractorLink constructor(
+open class ExtractorLink(
     open val source: String,
     open val name: String,
     override val url: String,
@@ -1085,7 +1085,7 @@ suspend fun getPostForm(requestUrl: String, html: String): String? {
     var hash: String? = null
 
     for (input in inputs) {
-        val value = input.attr("value") ?: continue
+        val value = input.attr("value")
         when (input.attr("name")) {
             "op" -> op = value
             "id" -> id = value

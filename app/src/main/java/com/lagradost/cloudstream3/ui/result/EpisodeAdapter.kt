@@ -262,7 +262,7 @@ class EpisodeAdapter(
                         episodePlayIcon.isVisible = false
                         episodeUpcomingIcon.isVisible = !episodePoster.isVisible
                         episodeDate.setText(
-                            com.lagradost.cloudstream3.utils.txt(
+                            txt(
                                 R.string.episode_upcoming_format,
                                 secondsToReadable(
                                     card.airDate.minus(unixTimeMS).div(1000).toInt(),

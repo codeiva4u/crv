@@ -2469,7 +2469,7 @@ class ResultViewModel2 : ViewModel() {
         _page.postValue(Resource.Loading(url))
         _episodes.postValue(Resource.Loading())
         val api =
-            APIHolder.getApiFromNameNull(searchResponse.apiName) ?: APIHolder.getApiFromUrlNull(
+            getApiFromNameNull(searchResponse.apiName) ?: APIHolder.getApiFromUrlNull(
                 searchResponse.url
             ) ?: APIRepository.noneApi
         val repo = APIRepository(api)
@@ -2520,7 +2520,7 @@ class ResultViewModel2 : ViewModel() {
             currentShowFillers = showFillers
 
             // set api
-            val api = APIHolder.getApiFromNameNull(apiName) ?: APIHolder.getApiFromUrlNull(url)
+            val api = getApiFromNameNull(apiName) ?: APIHolder.getApiFromUrlNull(url)
             if (api == null) {
                 _page.postValue(
                     Resource.Failure(

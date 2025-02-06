@@ -84,7 +84,7 @@ open class Filesim : ExtractorApi() {
         }
 
         val m3u8 =
-            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
+            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script)?.groupValues?.getOrNull(1)
         generateM3u8(
             name,
             m3u8 ?: return,

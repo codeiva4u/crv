@@ -34,7 +34,7 @@ open class Vidmoly : ExtractorApi() {
         val newUrl = if(url.contains("/w/"))
             url.replaceFirst("/w/", "/embed-")+"-920x360.html"
             else url
-        var script: String? = null;
+        var script: String? = null
         var attemps = 0
         while (attemps < 10 && script.isNullOrEmpty()){
             attemps++

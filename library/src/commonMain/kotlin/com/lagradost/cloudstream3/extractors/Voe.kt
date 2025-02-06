@@ -57,7 +57,7 @@ open class Voe : ExtractorApi() {
         val res = app.get(url, referer = referer).document
 
         val script =
-            if (!res.select("script").firstOrNull() { it.data().contains("sources =") }?.data()
+            if (!res.select("script").firstOrNull { it.data().contains("sources =") }?.data()
                     .isNullOrEmpty()
             ) {
                 res.select("script").find { it.data().contains("sources =") }?.data()

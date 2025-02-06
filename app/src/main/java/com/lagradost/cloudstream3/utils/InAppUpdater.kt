@@ -162,7 +162,6 @@ class InAppUpdater {
                 Log.d(LOG_TAG, "Downloading update: $url")
                 val appUpdateName = "CloudStream"
                 val appUpdateSuffix = "apk"
-                // Delete all old updates
                 this.cacheDir.listFiles()?.filter {
                     it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
                 }?.forEach {
@@ -196,7 +195,7 @@ class InAppUpdater {
                 this.packageManager.getPackageInfo(it, 0)?.versionName
             }
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
-            builder.setTitle("Install Update from $currentVersion to $apkVersion") // Modified line
+            builder.setTitle("Install Update from $currentVersion to $apkVersion")
             builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
@@ -234,7 +233,6 @@ class InAppUpdater {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
-            // If no APK path or version is found, do not show the notification
             if (apkPath == null || apkVersion == null) {
                 Log.e(LOG_TAG, "Downloaded APK path or version missing for notification")
                 return
@@ -247,28 +245,20 @@ class InAppUpdater {
                         getString(R.string.update_available_notification_message) +
                                 "\n\nChangelog:\n${settingsManager.getString("changelog", "")}"
                     )
-                    // Install Update Button
                     builder.setPositiveButton(R.string.install_update) { _, _ ->
                         showInstallDialog(apkPath, apkVersion)
-                        // Clear the downloaded APK info from SharedPreferences after installation
                         settingsManager.edit()
                             .remove("downloaded_apk_path")
                             .remove("downloaded_apk_version")
                             .apply()
                     }
-                    // Cancel Update Button
                     builder.setNegativeButton(R.string.cancel_update) { dialog, _ ->
                         dialog.dismiss()
-                        // Do NOT clear the downloaded APK info from SharedPreferences
-                        // This ensures the popup will show again next time the app is opened
                     }
-                    // Skip This Update Button
                     builder.setNeutralButton(R.string.skip_this_update) { _, _ ->
-                        // Save skipped update version but DO NOT clear APK info
                         settingsManager.edit()
                             .putString(getString(R.string.skip_update_key), updateVersion ?: "")
                             .apply()
-                        // This ensures the popup will show again next time the app is opened
                     }
                     builder.show().setDefaultFocus()
                 } catch (e: Exception) {
@@ -279,11 +269,9 @@ class InAppUpdater {
 
         suspend fun Activity.runAutoUpdate(checkAutoUpdate: Boolean = true): Boolean {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
-            // Check for existing downloaded APK
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
             if (!checkAutoUpdate && apkPath != null && apkVersion != null) {
-                // Show install dialog if downloaded APK exists and not auto-update check
                 runOnUiThread {
                     try {
                         showInstallDialog(apkPath, apkVersion)
@@ -300,41 +288,35 @@ class InAppUpdater {
             ) {
                 val update = getAppUpdate()
                 if (update.shouldUpdate && update.updateURL != null) {
-                    // Check if already downloaded same version
                     val downloadedVersion = settingsManager.getString("downloaded_apk_version", null)
                     if (downloadedVersion == update.updateVersion && checkAutoUpdate) {
-                        return false // Already have this version, skip download
+                        return false
                     }
-                    // Check if update should be skipped
                     val updateNodeId = settingsManager.getString(getString(R.string.skip_update_key), "")
                     if (update.updateNodeId.equals(updateNodeId) && checkAutoUpdate) {
                         return false
                     }
-                    // Start silent download in background
                     ioSafe {
                         try {
                             val downloadedFile = downloadUpdate(update.updateURL, false)
-                            // Save downloaded APK info for notification
                             val apkPath = downloadedFile.absolutePath
                             settingsManager.edit()
                                 .putString("downloaded_apk_path", apkPath)
                                 .putString("downloaded_apk_version", update.updateVersion)
-                                .putString("changelog", update.changelog) // Save changelog
+                                .putString("changelog", update.changelog)
                                 .apply()
                             Log.d(LOG_TAG, "Saved APK path: $apkPath")
-                            downloadedFile.deleteOnExit() // Ensure file persists until installation
-                            // Show notification to user about available update
-                            Log.d(LOG_TAG, "Update downloaded silently in background")
+                            downloadedFile.deleteOnExit()
                             showUpdateNotification(update.updateVersion)
                         } catch (e: Exception) {
                             Log.e(LOG_TAG, "Update download failed during silent download: ${e.message}")
                         }
                     }
-                    return true // Indicate update check was performed and download started (or skipped)
+                    return true
                 }
-                return false // No update available
+                return false
             }
-            return false // Auto-update is disabled
+            return false
         }
     }
 }

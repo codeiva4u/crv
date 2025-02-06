@@ -215,7 +215,7 @@ object VideoDownloadManager {
         hasCreatedNotChanel = true
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (SDK_INT >= Build.VERSION_CODES.O) {
             val name = DOWNLOAD_CHANNEL_NAME //getString(R.string.channel_name)
             val descriptionText = DOWNLOAD_CHANNEL_DESCRIPT//getString(R.string.channel_description)
             val importance = NotificationManager.IMPORTANCE_DEFAULT

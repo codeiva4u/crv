@@ -11,6 +11,7 @@ import android.content.pm.PackageInstaller
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.lagradost.cloudstream3.AcraApplication.Companion.context
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.mvvm.logError
@@ -22,9 +23,6 @@ const val INSTALL_ACTION = "ApkInstaller.INSTALL_ACTION"
 
 class ApkInstaller(private val service: PackageInstallerService) {
     companion object {
-        /**
-         * Used for postponed installations
-         */
         var delayedInstaller: DelayedInstaller? = null
         private var isReceiverRegistered = false
         private const val TAG = "ApkInstaller"
@@ -51,7 +49,7 @@ class ApkInstaller(private val service: PackageInstallerService) {
         Preparing,
         Downloading,
         Installing,
-        Finished, // Added Finished status
+        Finished,
         Failed,
     }
 
@@ -63,7 +61,7 @@ class ApkInstaller(private val service: PackageInstallerService) {
                 PackageInstaller.STATUS_FAILURE
             )) {
                 PackageInstaller.STATUS_PENDING_USER_ACTION -> {
-                    val userAction = intent.getSafeParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                    val userAction = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
                     userAction?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(userAction)
                 }
@@ -101,31 +99,22 @@ class ApkInstaller(private val service: PackageInstallerService) {
                 session.fsync(outputStream)
                 inputStream.close()
             }
-
-            // We must create an explicit intent or it will fail on Android 15+
             val installIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 Intent(service, PackageInstallerService::class.java).setAction(INSTALL_ACTION)
             } else Intent(INSTALL_ACTION)
-
             val installFlags = when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> PendingIntent.FLAG_MUTABLE
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> PendingIntent.FLAG_IMMUTABLE
                 else -> 0
             }
-
             val intentSender = PendingIntent.getBroadcast(
                 service, activeSession, installIntent, installFlags
             ).intentSender
-
-            // Use delayed installations on Android 13 and only if "allow from unknown sources" is enabled
-            // If the app lacks installation permission, it cannot ask for the permission when it's closed.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 context.packageManager.canRequestPackageInstalls()
             ) {
-                // Save for later installation since it's more jarring to have the app exit abruptly
                 delayedInstaller = DelayedInstaller(session, intentSender)
                 main {
-                    // Use real toast since it should show even if the app is exited
                     Toast.makeText(context, R.string.delayed_update_notice, Toast.LENGTH_LONG).show()
                 }
             } else {
@@ -143,7 +132,6 @@ class ApkInstaller(private val service: PackageInstallerService) {
     }
 
     init {
-        // Might be dangerous
         registerInstallActionReceiver()
     }
 
@@ -153,7 +141,14 @@ class ApkInstaller(private val service: PackageInstallerService) {
                 addAction(INSTALL_ACTION)
             }
             Log.d(TAG, "Registering install action event receiver")
-            context?.registerBroadcastReceiver(installActionReceiver, intentFilter)
+            context?.let {
+                ContextCompat.registerReceiver(
+                    it,
+                    installActionReceiver,
+                    intentFilter,
+                    ContextCompat.RECEIVER_NOT_EXPORTED
+                )
+            }
             isReceiverRegistered = true
         }
     }
