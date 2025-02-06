@@ -21,11 +21,9 @@ class UpdateProgressActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.update_progress_dialog)
-
         progressBar = findViewById(R.id.update_progress_bar)
         progressPercentageText = findViewById(R.id.update_progress_percentage_text)
         statusText = findViewById(R.id.update_status_text)
-
         // Initialize progress to 0%
         updateProgress(0)
     }

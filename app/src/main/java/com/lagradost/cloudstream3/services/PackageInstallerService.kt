@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
 import android.os.Build
-import android.os.Build.VERSION.SDK_INT
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -29,16 +28,13 @@ import kotlin.math.roundToInt
 class PackageInstallerService : Service() {
     private var installer: ApkInstaller? = null
     private lateinit var progressActivityIntent: Intent // Intent for progress activity
-
     private val baseNotification by lazy {
-        val flag = if (SDK_INT >= Build.VERSION_CODES.S) {
+        val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             PendingIntent.FLAG_IMMUTABLE
         } else 0
-
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent =
             PendingIntent.getActivity(this, 0, intent, flag)
-
         NotificationCompat.Builder(this, UPDATE_CHANNEL_ID)
             .setAutoCancel(false)
             .setColorized(true)
@@ -58,14 +54,13 @@ class PackageInstallerService : Service() {
             UPDATE_CHANNEL_NAME,
             UPDATE_CHANNEL_DESCRIPTION
         )
-        if (SDK_INT >= 29)
+        if (Build.VERSION.SDK_INT >= 29)
             startForeground(
                 UPDATE_NOTIFICATION_ID,
                 baseNotification.build(),
                 FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         else startForeground(UPDATE_NOTIFICATION_ID, baseNotification.build())
-
         // Initialize progress activity intent
         progressActivityIntent = UpdateProgressActivity.intent(this).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -77,39 +72,32 @@ class PackageInstallerService : Service() {
     private suspend fun downloadUpdate(url: String): Boolean {
         try {
             Log.d("PackageInstallerService", "Downloading update: $url")
-
             // Delete all old updates
             ioSafe {
                 val appUpdateName = "CloudStream"
                 val appUpdateSuffix = "apk"
-
                 this@PackageInstallerService.cacheDir.listFiles()?.filter {
                     it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
                 }?.forEach {
                     deleteFileOnExit(it)
                 }
             }
-
             updateLock.withLock {
                 updateNotificationProgress(
                     0f,
                     ApkInstaller.InstallProgressStatus.Downloading
                 )
-
                 // Start progress activity
                 startActivity(progressActivityIntent)
-
                 val body = app.get(url).body
                 val inputStream = body.byteStream()
                 installer = ApkInstaller(this)
                 val totalSize = body.contentLength()
                 var currentSize = 0
-
                 installer?.installApk(this, inputStream, totalSize, { bytesDownloaded ->
                     currentSize += bytesDownloaded
                     // Prevent div 0
                     if (totalSize == 0L) return@installApk
-
                     val percentage = currentSize / totalSize.toFloat()
                     updateProgressActivity(percentage) // Update progress activity
                     updateNotificationProgress(
@@ -124,11 +112,11 @@ class PackageInstallerService : Service() {
                     }
                 }
             }
-        restartApp() // Restart app after successful install
-        return true
-    } catch (e: Exception) {
-        logError(e)
-        updateNotificationProgress(0f, ApkInstaller.InstallProgressStatus.Failed)
+            restartApp() // Restart app after successful install
+            return true
+        } catch (e: Exception) {
+            logError(e)
+            updateNotificationProgress(0f, ApkInstaller.InstallProgressStatus.Failed)
             updateProgressActivityStatus(ApkInstaller.InstallProgressStatus.Failed) // Update progress activity status
             return false
         }
@@ -152,14 +140,12 @@ class PackageInstallerService : Service() {
         percentage: Float,
         state: ApkInstaller.InstallProgressStatus
     ) {
-//        Log.d(LOG_TAG, "Downloading app update progress $percentage | $state")
         val text = when (state) {
             ApkInstaller.InstallProgressStatus.Installing -> R.string.update_notification_installing
             ApkInstaller.InstallProgressStatus.Preparing, ApkInstaller.InstallProgressStatus.Downloading -> R.string.update_notification_downloading
             ApkInstaller.InstallProgressStatus.Failed -> R.string.update_notification_failed
             ApkInstaller.InstallProgressStatus.Finished -> TODO()
         }
-
         val newNotification = baseNotification
             .setContentTitle(getString(text))
             .apply {
@@ -175,10 +161,8 @@ class PackageInstallerService : Service() {
                 }
             }
             .build()
-
         val notificationManager =
             getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
         // Persistent notification on failure
         val id =
             if (state == ApkInstaller.InstallProgressStatus.Failed) UPDATE_NOTIFICATION_ID + 1 else UPDATE_NOTIFICATION_ID
@@ -216,7 +200,6 @@ class PackageInstallerService : Service() {
         private const val EXTRA_URL = "EXTRA_URL"
         const val PROGRESS_UPDATE_ACTION = "PROGRESS_UPDATE_ACTION" // Progress update action
         const val STATUS_UPDATE_ACTION = "STATUS_UPDATE_ACTION"     // Status update action
-
         const val UPDATE_CHANNEL_ID = "cloudstream3.updates"
         const val UPDATE_CHANNEL_NAME = "App Updates"
         const val UPDATE_CHANNEL_DESCRIPTION = "App updates notification channel"

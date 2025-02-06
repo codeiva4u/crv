@@ -835,9 +835,10 @@
 
     <string name="update_available_notification_title">Update Available</string>
     <string name="update_available_notification_message">A new update is available for CloudStream.</string>
-    <string name="skip_this_update">Skip This Update</string>
-    <string name="cancel_update">Cancel Update</string>
     <string name="install_update">Install Update</string>
+    <string name="cancel_update">Cancel Update</string>
+    <string name="skip_this_update">Skip This Update</string>
+
     <string name="update_progress_percentage">%d%%</string>
     <string name="update_file_missing">Update File Missing</string>
 </resources>

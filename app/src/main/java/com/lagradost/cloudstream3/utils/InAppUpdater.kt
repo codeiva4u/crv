@@ -34,7 +34,6 @@ class InAppUpdater {
         private const val GITHUB_REPO = "crv"
         private const val LOG_TAG = "InAppUpdater"
 
-        // === IN APP UPDATER ===
         data class GithubAsset(
             @JsonProperty("name") val name: String,
             @JsonProperty("size") val size: Int, // Size bytes
@@ -91,10 +90,8 @@ class InAppUpdater {
             val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
             val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
-
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
-
             val foundList = response.filter { !it.prerelease }
                 .sortedWith(compareBy { release ->
                     release.assets.firstOrNull { it.contentType == "application/vnd.android.package-archive" }?.name?.let {
@@ -103,11 +100,9 @@ class InAppUpdater {
                         }
                     }
                 }).toList()
-
             val found = foundList.lastOrNull()
             val foundAsset = found?.assets?.getOrNull(0)
             val currentVersion = packageName?.let { packageManager.getPackageInfo(it, 0) }
-
             foundAsset?.name?.let { assetName ->
                 val foundVersion = versionRegex.find(assetName)
                 val shouldUpdate =
@@ -120,7 +115,6 @@ class InAppUpdater {
                             it[3].toInt() * 100_000_000 + it[4].toInt() * 10_000 + it[5].toInt()
                         }
                     )!! < 0 else false
-
                 return if (foundVersion != null) {
                     Update(
                         shouldUpdate,
@@ -144,13 +138,10 @@ class InAppUpdater {
             val found = response.lastOrNull { it.prerelease || it.tagName == "pre-release" }
             val foundAsset = found?.assets?.filter { it.contentType == "application/vnd.android.package-archive" }?.getOrNull(0)
             val tagResponse = parseJson<GithubTag>(app.get(tagUrl, headers = headers).text)
-
             Log.d(LOG_TAG, "Fetched GitHub tag: ${tagResponse.githubObject.sha.take(7)}")
-
             val shouldUpdate =
                 getString(R.string.commit_hash).trim { it.isWhitespace() }.take(7) !=
                         tagResponse.githubObject.sha.trim { it.isWhitespace() }.take(7)
-
             return if (foundAsset != null) {
                 Update(
                     shouldUpdate,
@@ -171,18 +162,15 @@ class InAppUpdater {
                 Log.d(LOG_TAG, "Downloading update: $url")
                 val appUpdateName = "CloudStream"
                 val appUpdateSuffix = "apk"
-
                 // Delete all old updates
                 this.cacheDir.listFiles()?.filter {
                     it.name.startsWith(appUpdateName) && it.extension == appUpdateSuffix
                 }?.forEach {
                     deleteFileOnExit(it)
                 }
-
                 val downloadedFile = withContext(Dispatchers.IO) {
                     File.createTempFile(appUpdateName, ".$appUpdateSuffix", cacheDir)
                 }
-
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
                     sink.writeAll(app.get(url).body.source())
@@ -204,22 +192,18 @@ class InAppUpdater {
                 showToast(getString(R.string.update_file_missing), Toast.LENGTH_LONG)
                 return
             }
-
             val currentVersion = this.packageName?.let {
                 this.packageManager.getPackageInfo(it, 0)?.versionName
             }
-
             val builder: AlertDialog.Builder = AlertDialog.Builder(this)
             builder.setTitle("Install Update from $currentVersion to $apkVersion") // Modified line
             builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
             }
-
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
             }
-
             val dialog = builder.create()
             dialog.show()
             dialog.setDefaultFocus()
@@ -250,13 +234,11 @@ class InAppUpdater {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
-
             // If no APK path or version is found, do not show the notification
             if (apkPath == null || apkVersion == null) {
                 Log.e(LOG_TAG, "Downloaded APK path or version missing for notification")
                 return
             }
-
             runOnUiThread {
                 try {
                     val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -265,7 +247,6 @@ class InAppUpdater {
                         getString(R.string.update_available_notification_message) +
                                 "\n\nChangelog:\n${settingsManager.getString("changelog", "")}"
                     )
-
                     // Install Update Button
                     builder.setPositiveButton(R.string.install_update) { _, _ ->
                         showInstallDialog(apkPath, apkVersion)
@@ -275,14 +256,12 @@ class InAppUpdater {
                             .remove("downloaded_apk_version")
                             .apply()
                     }
-
                     // Cancel Update Button
                     builder.setNegativeButton(R.string.cancel_update) { dialog, _ ->
                         dialog.dismiss()
                         // Do NOT clear the downloaded APK info from SharedPreferences
                         // This ensures the popup will show again next time the app is opened
                     }
-
                     // Skip This Update Button
                     builder.setNeutralButton(R.string.skip_this_update) { _, _ ->
                         // Save skipped update version but DO NOT clear APK info
@@ -291,7 +270,6 @@ class InAppUpdater {
                             .apply()
                         // This ensures the popup will show again next time the app is opened
                     }
-
                     builder.show().setDefaultFocus()
                 } catch (e: Exception) {
                     logError(e)
@@ -304,7 +282,6 @@ class InAppUpdater {
             // Check for existing downloaded APK
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
-
             if (!checkAutoUpdate && apkPath != null && apkVersion != null) {
                 // Show install dialog if downloaded APK exists and not auto-update check
                 runOnUiThread {
@@ -316,7 +293,6 @@ class InAppUpdater {
                 }
                 return true
             }
-
             if (!checkAutoUpdate || settingsManager.getBoolean(
                     getString(R.string.auto_update_key),
                     true
@@ -329,13 +305,11 @@ class InAppUpdater {
                     if (downloadedVersion == update.updateVersion && checkAutoUpdate) {
                         return false // Already have this version, skip download
                     }
-
                     // Check if update should be skipped
                     val updateNodeId = settingsManager.getString(getString(R.string.skip_update_key), "")
                     if (update.updateNodeId.equals(updateNodeId) && checkAutoUpdate) {
                         return false
                     }
-
                     // Start silent download in background
                     ioSafe {
                         try {
@@ -349,7 +323,6 @@ class InAppUpdater {
                                 .apply()
                             Log.d(LOG_TAG, "Saved APK path: $apkPath")
                             downloadedFile.deleteOnExit() // Ensure file persists until installation
-
                             // Show notification to user about available update
                             Log.d(LOG_TAG, "Update downloaded silently in background")
                             showUpdateNotification(update.updateVersion)
