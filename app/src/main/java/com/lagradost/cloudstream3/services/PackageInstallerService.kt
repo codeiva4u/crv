@@ -33,14 +33,12 @@ class PackageInstallerService : Service() {
             PendingIntent.FLAG_IMMUTABLE
         } else 0
         val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent =
-            PendingIntent.getActivity(this, 0, intent, flag)
+        val pendingIntent = PendingIntent.getActivity(this, 0, intent, flag)
         NotificationCompat.Builder(this, UPDATE_CHANNEL_ID)
             .setAutoCancel(false)
             .setColorized(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
-            // If low priority then the notification might not show :(
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setColor(this.colorFromAttribute(R.attr.colorPrimary))
             .setContentTitle(getString(R.string.update_notification_downloading))
@@ -174,8 +172,6 @@ class PackageInstallerService : Service() {
         ioSafe {
             downloadUpdate(url)
             // Close the service after the update is done
-            // If no sleep then the install prompt may not appear and the notification
-            // will disappear instantly
             delay(10_000)
             this@PackageInstallerService.stopSelf()
         }
