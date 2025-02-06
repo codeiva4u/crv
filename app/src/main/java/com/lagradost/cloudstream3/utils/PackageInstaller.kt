@@ -61,7 +61,13 @@ class ApkInstaller(private val service: PackageInstallerService) {
                 PackageInstaller.STATUS_FAILURE
             )) {
                 PackageInstaller.STATUS_PENDING_USER_ACTION -> {
-                    val userAction = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+                    // Use the new getParcelableExtra method for API 33+ and fallback for older APIs
+                    val userAction = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(Intent.EXTRA_INTENT)
+                    }
                     userAction?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(userAction)
                 }
