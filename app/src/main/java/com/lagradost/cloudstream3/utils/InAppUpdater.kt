@@ -233,10 +233,12 @@ class InAppUpdater {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
             val apkPath = settingsManager.getString("downloaded_apk_path", null)
             val apkVersion = settingsManager.getString("downloaded_apk_version", null)
+
             if (apkPath == null || apkVersion == null) {
                 Log.e(LOG_TAG, "Downloaded APK path or version missing for notification")
                 return
             }
+
             runOnUiThread {
                 try {
                     val builder: AlertDialog.Builder = AlertDialog.Builder(this)
@@ -253,9 +255,11 @@ class InAppUpdater {
                             .apply()
                     }
                     builder.setNegativeButton(R.string.cancel_update) { dialog, _ ->
+                        // Do not delete the APK file
                         dialog.dismiss()
                     }
                     builder.setNeutralButton(R.string.skip_this_update) { _, _ ->
+                        // Save the skipped update version in SharedPreferences
                         settingsManager.edit()
                             .putString(getString(R.string.skip_update_key), updateVersion ?: "")
                             .apply()

@@ -169,7 +169,7 @@ class PackageInstallerService : Service() {
     override fun onDestroy() {
         installer?.unregisterInstallActionReceiver()
         installer = null
-        this.stopSelf()
+        // Do not delete the APK file here
         super.onDestroy()
     }
 
