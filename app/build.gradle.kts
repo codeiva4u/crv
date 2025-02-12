@@ -86,210 +86,225 @@ android {
             "SIMKL_CLIENT_SECRET",
             "\"" + (System.getenv("SIMKL_CLIENT_SECRET") ?: localProperties["simkl.secret"]) + "\""
         )
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    buildTypes {
-        release {
-            isDebuggable = false
-            isMinifyEnabled = false
-            isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+        defaultConfig {
+            buildConfigField(
+                "String",
+                "ONLINE_PLUGINS_FOLDER",
+                "\"${System.getenv("ONLINE_PLUGINS_FOLDER")}\""
             )
-        }
-        debug {
-            isDebuggable = true
-            applicationIdSuffix = ".debug"
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
+            buildConfigField("String", "REPO_URL", "\"${System.getenv("REPO_URL")}\"")
+            buildConfigField("String", "REPO_NAME", "\"${System.getenv("REPO_NAME")}\"")
 
-    flavorDimensions.add("state")
-    productFlavors {
-        create("stable") {
-            dimension = "state"
-            resValue("bool", "is_prerelease", "false")
+            testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
-        create("prerelease") {
-            dimension = "state"
-            resValue("bool", "is_prerelease", "true")
-            buildConfigField("boolean", "BETA", "true")
-            applicationIdSuffix = ".prerelease"
-            if (signingConfigs.names.contains("prerelease")) {
-                signingConfig = signingConfigs.getByName("prerelease")
-            } else {
-                logger.warn("No prerelease signing config!")
+
+        buildTypes {
+            release {
+                isDebuggable = false
+                isMinifyEnabled = false
+                isShrinkResources = false
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+                )
             }
-            versionNameSuffix = "-PRE"
-            versionCode = (System.currentTimeMillis() / 60000).toInt()
-        }
-    }
-
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.toVersion(javaTarget.target)
-        targetCompatibility = JavaVersion.toVersion(javaTarget.target)
-    }
-
-    lint {
-        abortOnError = false
-        checkReleaseBuilds = false
-    }
-
-    buildFeatures {
-        buildConfig = true
-    }
-
-    namespace = "com.lagradost.cloudstream3"
-}
-
-dependencies {
-    // Testing
-    testImplementation(libs.junit)
-    testImplementation(libs.json)
-    androidTestImplementation(libs.core)
-    implementation(libs.junit.ktx)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-
-    // Android Core & Lifecycle
-    implementation(libs.core.ktx)
-    implementation(libs.appcompat)
-    implementation(libs.navigation.ui.ktx)
-    implementation(libs.lifecycle.livedata.ktx)
-    implementation(libs.lifecycle.viewmodel.ktx)
-    implementation(libs.navigation.fragment.ktx)
-
-    // Design & UI
-    implementation(libs.preference.ktx)
-    implementation(libs.material)
-    implementation(libs.constraintlayout)
-    implementation(libs.swiperefreshlayout)
-
-    // Coil Image Loading
-    implementation(libs.coil)
-    implementation(libs.coil.network.okhttp)
-
-    // Media 3 (ExoPlayer)
-    implementation(libs.bundles.media3)
-    implementation(libs.video)
-
-    // PlayBack
-    implementation(libs.colorpicker) // Subtitle Color Picker
-    implementation(libs.newpipeextractor) // For Trailers
-    implementation(libs.juniversalchardet) // Subtitle Decoding
-
-    // FFmpeg Decoding
-    implementation(libs.bundles.nextlibMedia3)
-
-    // Crash Reports (AcraApplication.kt)
-    implementation(libs.acra.core)
-    implementation(libs.acra.toast)
-
-    // UI Stuff
-    implementation(libs.shimmer) // Shimmering Effect (Loading Skeleton)
-    implementation(libs.palette.ktx) // Palette for Images -> Colors
-    implementation(libs.tvprovider)
-    implementation(libs.overlappingpanels) // Gestures
-    implementation(libs.biometric) // Fingerprint Authentication
-    implementation(libs.previewseekbar.media3) // SeekBar Preview
-    implementation(libs.qrcode.kotlin) // QR Code for PIN Auth on TV
-
-    // Extensions & Other Libs
-    implementation(libs.rhino) // Run JavaScript
-    implementation(libs.quickjs)
-    implementation(libs.fuzzywuzzy) // Library/Ext Searching with Levenshtein Distance
-    implementation(libs.safefile) // To Prevent the URI File Fu*kery
-    implementation(libs.tmdb.java) // TMDB API v3 Wrapper Made with RetroFit
-    coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
-    implementation(libs.conscrypt.android) {
-        version {
-            strictly("2.5.2")
-        }
-        because("2.5.3 crashes everything for everyone.")
-    } // To Fix SSL Fu*kery on Android 9
-    implementation(libs.jackson.module.kotlin) {
-        version {
-            strictly("2.13.1")
-        }
-        because("Don't Bump Jackson above 2.13.1, Crashes on Android TV's and FireSticks that have Min API Level 25 or Less.")
-    } // JSON Parser
-
-    // Torrent Support
-    implementation(libs.torrentserver)
-
-    // Downloading & Networking
-    implementation(libs.work.runtime)
-    implementation(libs.work.runtime.ktx)
-    implementation(libs.nicehttp) // HTTP Lib
-
-    implementation(project(":library") {
-        // There does not seem to be a good way of getting the android flavor.
-        val isDebug = gradle.startParameter.taskRequests.any { task ->
-            task.args.any { arg ->
-                arg.contains("debug", true)
+            debug {
+                isDebuggable = true
+                applicationIdSuffix = ".debug"
+                proguardFiles(
+                    getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+                )
             }
         }
 
-        this.extra.set("isDebug", isDebug)
-    })
-}
+        flavorDimensions.add("state")
+        productFlavors {
+            create("stable") {
+                dimension = "state"
+                resValue("bool", "is_prerelease", "false")
+            }
+            create("prerelease") {
+                dimension = "state"
+                resValue("bool", "is_prerelease", "true")
+                buildConfigField("boolean", "BETA", "true")
+                applicationIdSuffix = ".prerelease"
+                if (signingConfigs.names.contains("prerelease")) {
+                    signingConfig = signingConfigs.getByName("prerelease")
+                } else {
+                    logger.warn("No prerelease signing config!")
+                }
+                versionNameSuffix = "-PRE"
+                versionCode = (System.currentTimeMillis() / 60000).toInt()
+            }
+        }
 
-tasks.register<Jar>("androidSourcesJar") {
-    archiveClassifier.set("sources")
-    from(android.sourceSets.getByName("main").java.srcDirs) // Full Sources
-}
+        compileOptions {
+            isCoreLibraryDesugaringEnabled = true
+            sourceCompatibility = JavaVersion.toVersion(javaTarget.target)
+            targetCompatibility = JavaVersion.toVersion(javaTarget.target)
+        }
 
-tasks.register<Copy>("copyJar") {
-    from(
-        "build/intermediates/compile_app_classes_jar/prereleaseDebug/bundlePrereleaseDebugClassesToCompileJar",
-        "../library/build/libs"
-    )
-    into("build/app-classes")
-    include("classes.jar", "library-jvm*.jar")
-    // Remove the version
-    rename("library-jvm.*.jar", "library-jvm.jar")
-}
+        lint {
+            abortOnError = false
+            checkReleaseBuilds = false
+        }
+
+        buildFeatures {
+            buildConfig = true
+        }
+
+        namespace = "com.lagradost.cloudstream3"
+    }
+
+    dependencies {
+        // Testing
+        testImplementation(libs.junit)
+        testImplementation(libs.json)
+        androidTestImplementation(libs.core)
+        implementation(libs.junit.ktx)
+        androidTestImplementation(libs.ext.junit)
+        androidTestImplementation(libs.espresso.core)
+
+        // Android Core & Lifecycle
+        implementation(libs.core.ktx)
+        implementation(libs.appcompat)
+        implementation(libs.navigation.ui.ktx)
+        implementation(libs.lifecycle.livedata.ktx)
+        implementation(libs.lifecycle.viewmodel.ktx)
+        implementation(libs.navigation.fragment.ktx)
+
+        // Design & UI
+        implementation(libs.preference.ktx)
+        implementation(libs.material)
+        implementation(libs.constraintlayout)
+        implementation(libs.swiperefreshlayout)
+
+        // Coil Image Loading
+        implementation(libs.coil)
+        implementation(libs.coil.network.okhttp)
+
+        // Media 3 (ExoPlayer)
+        implementation(libs.bundles.media3)
+        implementation(libs.video)
+
+        // PlayBack
+        implementation(libs.colorpicker) // Subtitle Color Picker
+        implementation(libs.newpipeextractor) // For Trailers
+        implementation(libs.juniversalchardet) // Subtitle Decoding
+
+        // FFmpeg Decoding
+        implementation(libs.bundles.nextlibMedia3)
+
+        // Crash Reports (AcraApplication.kt)
+        implementation(libs.acra.core)
+        implementation(libs.acra.toast)
+
+        // UI Stuff
+        implementation(libs.shimmer) // Shimmering Effect (Loading Skeleton)
+        implementation(libs.palette.ktx) // Palette for Images -> Colors
+        implementation(libs.tvprovider)
+        implementation(libs.overlappingpanels) // Gestures
+        implementation(libs.biometric) // Fingerprint Authentication
+        implementation(libs.previewseekbar.media3) // SeekBar Preview
+        implementation(libs.qrcode.kotlin) // QR Code for PIN Auth on TV
+
+        // Extensions & Other Libs
+        implementation(libs.rhino) // Run JavaScript
+        implementation(libs.quickjs)
+        implementation(libs.fuzzywuzzy) // Library/Ext Searching with Levenshtein Distance
+        implementation(libs.safefile) // To Prevent the URI File Fu*kery
+        implementation(libs.tmdb.java) // TMDB API v3 Wrapper Made with RetroFit
+        coreLibraryDesugaring(libs.desugar.jdk.libs.nio) // NIO Flavor Needed for NewPipeExtractor
+        implementation(libs.conscrypt.android) {
+            version {
+                strictly("2.5.2")
+            }
+            because("2.5.3 crashes everything for everyone.")
+        } // To Fix SSL Fu*kery on Android 9
+        implementation(libs.jackson.module.kotlin) {
+            version {
+                strictly("2.13.1")
+            }
+            because("Don't Bump Jackson above 2.13.1, Crashes on Android TV's and FireSticks that have Min API Level 25 or Less.")
+        } // JSON Parser
+
+        // Torrent Support
+        implementation(libs.torrentserver)
+
+        // Downloading & Networking
+        implementation(libs.work.runtime)
+        implementation(libs.work.runtime.ktx)
+        implementation(libs.nicehttp) // HTTP Lib
+
+        implementation(project(":library") {
+            // There does not seem to be a good way of getting the android flavor.
+            val isDebug = gradle.startParameter.taskRequests.any { task ->
+                task.args.any { arg ->
+                    arg.contains("debug", true)
+                }
+            }
+
+            this.extra.set("isDebug", isDebug)
+        })
+    }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    tasks.register<Jar>("androidSourcesJar") {
+        archiveClassifier.set("sources")
+        from(android.sourceSets.getByName("main").java.srcDirs) // Full Sources
+    }
+
+    tasks.register<Copy>("copyJar") {
+        from(
+            "build/intermediates/compile_app_classes_jar/prereleaseDebug/bundlePrereleaseDebugClassesToCompileJar",
+            "../library/build/libs"
+        )
+        into("build/app-classes")
+        include("classes.jar", "library-jvm*.jar")
+        // Remove the version
+        rename("library-jvm.*.jar", "library-jvm.jar")
+    }
 
 // Merge the app classes and the library classes into classes.jar
-tasks.register<Jar>("makeJar") {
-    // Duplicates cause hard to catch errors, better to fail at compile time.
-    duplicatesStrategy = DuplicatesStrategy.FAIL
-    dependsOn(tasks.getByName("copyJar"))
-    from(
-        zipTree("build/app-classes/classes.jar"),
-        zipTree("build/app-classes/library-jvm.jar")
-    )
-    destinationDirectory.set(layout.buildDirectory)
-    archiveBaseName = "classes"
-}
-
-tasks.withType<KotlinJvmCompile> {
-    compilerOptions {
-        jvmTarget.set(javaTarget)
-        freeCompilerArgs.add("-Xjvm-default=all-compatibility")
+    tasks.register<Jar>("makeJar") {
+        // Duplicates cause hard to catch errors, better to fail at compile time.
+        duplicatesStrategy = DuplicatesStrategy.FAIL
+        dependsOn(tasks.getByName("copyJar"))
+        from(
+            zipTree("build/app-classes/classes.jar"),
+            zipTree("build/app-classes/library-jvm.jar")
+        )
+        destinationDirectory.set(layout.buildDirectory)
+        archiveBaseName = "classes"
     }
-}
 
-dokka {
-    moduleName = "App"
-    dokkaSourceSets {
-        main {
-            analysisPlatform = KotlinPlatform.JVM
-            documentedVisibilities(
-                VisibilityModifier.Public,
-                VisibilityModifier.Protected
-            )
+    tasks.withType<KotlinJvmCompile> {
+        compilerOptions {
+            jvmTarget.set(javaTarget)
+            freeCompilerArgs.add("-Xjvm-default=all-compatibility")
+        }
+    }
 
-            sourceLink {
-                localDirectory = file("..")
-                remoteUrl("https://github.com/recloudstream/cloudstream/tree/master")
-                remoteLineSuffix = "#L"
+    dokka {
+        moduleName = "App"
+        dokkaSourceSets {
+            main {
+                analysisPlatform = KotlinPlatform.JVM
+                documentedVisibilities(
+                    VisibilityModifier.Public,
+                    VisibilityModifier.Protected
+                )
+
+                sourceLink {
+                    localDirectory = file("..")
+                    remoteUrl("https://github.com/recloudstream/cloudstream/tree/master")
+                    remoteLineSuffix = "#L"
+                }
             }
         }
     }
