@@ -113,8 +113,8 @@ android {
                 // GitHub Token (from environment variable)
                 buildConfigField(
                     "String",
-                    "GH_TOKEN",
-                    "\"${System.getenv("GH_TOKEN")}\""
+                    "GITHUB_TOKEN",
+                    "\"${System.getenv("GITHUB_TOKEN")}\""
                 )
 
                 // Test Instrumentation Runner

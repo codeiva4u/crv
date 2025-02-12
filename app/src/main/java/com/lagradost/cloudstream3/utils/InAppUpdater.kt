@@ -90,7 +90,7 @@ class InAppUpdater {
             val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
             val headers = mapOf(
                 "Accept" to "application/vnd.github.v3+json",
-                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
+                "Authorization" to "token ${BuildConfig.GITHUB_TOKEN}" // Add GH_TOKEN here
             )
             val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
@@ -143,7 +143,7 @@ class InAppUpdater {
             val releaseUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
             val headers = mapOf(
                 "Accept" to "application/vnd.github.v3+json",
-                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
+                "Authorization" to "token ${BuildConfig.GITHUB_TOKEN}" // Add GH_TOKEN here
             )
             val response =
                 parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
@@ -194,7 +194,7 @@ class InAppUpdater {
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
                     val headers = mapOf(
-                        "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
+                        "Authorization" to "token ${BuildConfig.GITHUB_TOKEN}" // Add GH_TOKEN here
                     )
                     sink.writeAll(app.get(url, headers = headers).body.source())
                     sink.close()
