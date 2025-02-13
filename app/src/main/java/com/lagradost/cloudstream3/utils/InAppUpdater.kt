@@ -226,6 +226,11 @@ class InAppUpdater {
             builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
                 dialog.dismiss()
+
+                // Clear cache and temporary files after successful installation
+                this.clearCacheAndTempFiles()
+
+                dialog.dismiss()
             }
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
@@ -340,6 +345,9 @@ class InAppUpdater {
                 runOnUiThread {
                     try {
                         showInstallDialog(apkPath, apkVersion)
+
+                        // Clear cache and temporary files after successful installation
+                        this.clearCacheAndTempFiles()
                     } catch (e: Exception) {
                         logError(e)
                     }
@@ -367,8 +375,9 @@ class InAppUpdater {
                             downloadedFile.deleteOnExit()
                             showUpdateNotification()
 
-                            // Perform post-update operations after successful download
-                            // performPostUpdateOperations(this@runAutoUpdate)
+                            // Clear cache and temporary files after successful installation
+
+                            this@runAutoUpdate.clearCacheAndTempFiles()
                         } catch (e: Exception) {
                             Log.e(
                                 LOG_TAG,
