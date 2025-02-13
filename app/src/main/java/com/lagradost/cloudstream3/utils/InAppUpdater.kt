@@ -191,12 +191,10 @@ class InAppUpdater {
                 val downloadedFile = withContext(Dispatchers.IO) {
                     File.createTempFile(appUpdateName, ".$appUpdateSuffix", cacheDir)
                 }
+
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
-                    val headers = mapOf(
-                        "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-                    )
-                    sink.writeAll(app.get(url, headers = headers).body.source())
+                    sink.writeAll(app.get(url).body.source())
                     sink.close()
                     if (autoInstall) {
                         openApk(this, Uri.fromFile(downloadedFile))
