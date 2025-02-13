@@ -57,6 +57,8 @@ jobs:
           cd $GITHUB_WORKSPACE/src/
           chmod +x gradlew
           ./gradlew docs:dokkaGeneratePublicationHtml
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Copy Dokka
         run: |

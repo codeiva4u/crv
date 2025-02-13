@@ -194,7 +194,10 @@ class InAppUpdater {
 
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
-                    sink.writeAll(app.get(url).body.source())
+                    val headers = mapOf(
+                        "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
+                    )
+                    sink.writeAll(app.get(url, headers = headers).body.source())
                     sink.close()
                     if (autoInstall) {
                         openApk(this, Uri.fromFile(downloadedFile))
@@ -253,8 +256,8 @@ class InAppUpdater {
                 }
             } catch (e: Exception) {
                 logError(e)
-                // Clear cache and temporary files even if installation fails
-                context.clearCacheAndTempFiles()
+//                // Clear cache and temporary files even if installation fails
+//                context.clearCacheAndTempFiles()
             }
             // Clear cache and temporary files after successful installation
             context.clearCacheAndTempFiles()
