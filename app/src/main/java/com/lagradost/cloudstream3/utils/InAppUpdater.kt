@@ -256,10 +256,10 @@ class InAppUpdater {
                 }
             } catch (e: Exception) {
                 logError(e)
-//                // Clear cache and temporary files even if installation fails
-//                context.clearCacheAndTempFiles()
+                // Do not clear cache and temp files if installation fails
+                return
             }
-            // Clear cache and temporary files after successful installation
+            // Clear cache and temporary files only after successful installation
             context.clearCacheAndTempFiles()
         }
 
