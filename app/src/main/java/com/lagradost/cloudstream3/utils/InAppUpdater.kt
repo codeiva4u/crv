@@ -88,10 +88,7 @@ class InAppUpdater {
 
         private suspend fun Activity.getReleaseUpdate(): Update {
             val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
-            val headers = mapOf(
-                "Accept" to "application/vnd.github.v3+json",
-                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-            )
+            val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
@@ -141,10 +138,7 @@ class InAppUpdater {
             val tagUrl =
                 "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
             val releaseUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
-            val headers = mapOf(
-                "Accept" to "application/vnd.github.v3+json",
-                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-            )
+            val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
                 parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
             val found = response.lastOrNull { it.prerelease || it.tagName == "pre-release" }
@@ -194,10 +188,7 @@ class InAppUpdater {
 
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
-                    val headers = mapOf(
-                        "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-                    )
-                    sink.writeAll(app.get(url, headers = headers).body.source())
+                    sink.writeAll(app.get(url).body.source())
                     sink.close()
                     if (autoInstall) {
                         openApk(this, Uri.fromFile(downloadedFile))
@@ -225,11 +216,6 @@ class InAppUpdater {
             builder.setTitle("Install Update from $currentVersion to $apkVersion")
             builder.setPositiveButton(this.getString(R.string.install_update)) { dialog: DialogInterface, _: Int ->
                 openApk(this@showInstallDialog, Uri.fromFile(downloadedFile))
-                dialog.dismiss()
-
-                // Clear cache and temporary files after successful installation
-                this.clearCacheAndTempFiles()
-
                 dialog.dismiss()
             }
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
@@ -261,10 +247,10 @@ class InAppUpdater {
                 }
             } catch (e: Exception) {
                 logError(e)
-                // Do not clear cache and temp files if installation fails
-                return
+                // Clear cache and temporary files even if installation fails
+                context.clearCacheAndTempFiles()
             }
-            // Clear cache and temporary files only after successful installation
+            // Clear cache and temporary files after successful installation
             context.clearCacheAndTempFiles()
         }
 
@@ -345,9 +331,6 @@ class InAppUpdater {
                 runOnUiThread {
                     try {
                         showInstallDialog(apkPath, apkVersion)
-
-                        // Clear cache and temporary files after successful installation
-                        this.clearCacheAndTempFiles()
                     } catch (e: Exception) {
                         logError(e)
                     }
@@ -375,9 +358,6 @@ class InAppUpdater {
                             downloadedFile.deleteOnExit()
                             showUpdateNotification()
 
-                            // Clear cache and temporary files after successful installation
-
-                            this@runAutoUpdate.clearCacheAndTempFiles()
                         } catch (e: Exception) {
                             Log.e(
                                 LOG_TAG,
