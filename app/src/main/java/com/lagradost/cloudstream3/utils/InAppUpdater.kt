@@ -226,6 +226,7 @@ class InAppUpdater {
             }
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
+                // यदि उपयोगकर्ता रद्द करता है, तो APK फ़ाइल को हटाने से बचें
             }
             val dialog = builder.create()
             dialog.show()
@@ -248,37 +249,35 @@ class InAppUpdater {
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
                         data = contentUri
-
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(installIntent)
+
+                    // APK फ़ाइल को इंस्टॉलेशन के बाद ही हटाएं
+                    context.clearCacheAndTempFiles()
                 }
             } catch (e: Exception) {
                 logError(e)
-                showToast(context, "इंस्टॉल करने में त्रुटि: ${e.message}", Toast.LENGTH_LONG)
-                // Clear cache and temporary files even if installation fails
-              //  context.clearCacheAndTempFiles()
+                // त्रुटि की स्थिति में भी APK फ़ाइल को हटाने से बचें
+                Log.e(LOG_TAG, "Failed to install APK: ${e.message}")
             }
-            // Clear cache and temporary files after successful installation
-           // context.clearCacheAndTempFiles()
         }
 
         /** Clears cache and temporary files after update installation.
          */
         private fun Activity.clearCacheAndTempFiles() {
             try {
-                // Clear cache directory
+                // कैश डायरेक्टरी साफ़ करें
                 this.cacheDir.listFiles()?.forEach { file ->
-                    if (file.exists()) {
+                    if (file.exists() && !file.name.endsWith(".apk")) {
                         deleteFileOnExit(file)
                     }
                 }
 
-                // Clear temporary files (if any specific directory is used for temp files)
+                // अस्थायी फ़ाइलें साफ़ करें (यदि कोई विशेष डायरेक्टरी हो)
                 val tempDir = File(this.cacheDir, "temp")
                 if (tempDir.exists()) {
                     tempDir.listFiles()?.forEach { file ->
-                        if (file.exists()) {
+                        if (file.exists() && !file.name.endsWith(".apk")) {
                             deleteFileOnExit(file)
                         }
                     }
