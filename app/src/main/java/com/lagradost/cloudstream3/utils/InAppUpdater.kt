@@ -264,30 +264,33 @@ class InAppUpdater {
 
         /** Clears cache and temporary files after update installation.
          */
-//        private fun Activity.clearCacheAndTempFiles() {
-//            try {
-//                // कैश डायरेक्टरी साफ़ करें
-//                this.cacheDir.listFiles()?.forEach { file ->
-//                    if (file.exists() && !file.name.endsWith(".apk")) {
-//                        deleteFileOnExit(file)
-//                    }
-//                }
-//
-//                // अस्थायी फ़ाइलें साफ़ करें (यदि कोई विशेष डायरेक्टरी हो)
-//                val tempDir = File(this.cacheDir, "temp")
-//                if (tempDir.exists()) {
-//                    tempDir.listFiles()?.forEach { file ->
-//                        if (file.exists() && !file.name.endsWith(".apk")) {
-//                            deleteFileOnExit(file)
-//                        }
-//                    }
-//                }
-//
-//                Log.d(LOG_TAG, "Cache and temporary files cleared successfully.")
-//            } catch (e: Exception) {
-//                Log.e(LOG_TAG, "Failed to clear cache and temporary files: ${e.message}")
-//            }
-//        }
+        // यह फ़ंक्शन सभी कैश और अस्थायी फ़ाइलें साफ़ करने के लिए उपयोग किया जाएगा
+
+        private fun Activity.clearAllCacheAndTempFiles() {
+            try {
+                // सभी कैश फ़ाइलें हटाएं
+                this.cacheDir.deleteRecursively()
+
+                // अस्थायी फ़ाइलें हटाएं
+                val tempDir = File(this.cacheDir.parentFile, "temp")
+                if (tempDir.exists()) {
+                    tempDir.deleteRecursively()
+                }
+
+                Log.d(LOG_TAG, "All cache and temporary files cleared successfully.")
+            } catch (e: Exception) {
+                Log.e(LOG_TAG, "Failed to clear cache and temporary files: ${e.message}")
+            }
+        }
+
+        // अपडेट सफलतापूर्वक इंस्टॉल होने के बाद कैश और अस्थायी फ़ाइलें साफ़ करने के लिए इसे कॉल करें
+        private fun performPostUpdateOperations(activity: Activity) {
+            // सभी कैश और अस्थायी फ़ाइलें साफ़ करें
+            activity.clearAllCacheAndTempFiles()
+
+            // अन्य पोस्ट-अपडेट ऑपरेशन यहां जोड़ें (यदि कोई हो)
+            Log.d(LOG_TAG, "Post-update operations completed.")
+        }
 
         private fun Activity.showUpdateNotification() {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
@@ -366,6 +369,8 @@ class InAppUpdater {
                             downloadedFile.deleteOnExit()
                             showUpdateNotification()
 
+                            // अपडेट सफलतापूर्वक इंस्टॉल होने के बाद कैश और अस्थायी फ़ाइलें साफ़ करें
+                            performPostUpdateOperations(this@runAutoUpdate)
                         } catch (e: Exception) {
                             Log.e(
                                 LOG_TAG,
