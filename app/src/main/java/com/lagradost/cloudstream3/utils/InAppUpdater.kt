@@ -248,16 +248,19 @@ class InAppUpdater {
                         addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
                         data = contentUri
+
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
                     context.startActivity(installIntent)
                 }
             } catch (e: Exception) {
                 logError(e)
+                showToast(context, "इंस्टॉल करने में त्रुटि: ${e.message}", Toast.LENGTH_LONG)
                 // Clear cache and temporary files even if installation fails
-                context.clearCacheAndTempFiles()
+              //  context.clearCacheAndTempFiles()
             }
             // Clear cache and temporary files after successful installation
-            context.clearCacheAndTempFiles()
+           // context.clearCacheAndTempFiles()
         }
 
         /** Clears cache and temporary files after update installation.
