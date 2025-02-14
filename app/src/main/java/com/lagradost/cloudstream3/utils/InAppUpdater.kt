@@ -253,7 +253,7 @@ class InAppUpdater {
                     context.startActivity(installIntent)
 
                     // APK फ़ाइल को इंस्टॉलेशन के बाद ही हटाएं
-                    context.clearCacheAndTempFiles()
+                //    context.clearCacheAndTempFiles()
                 }
             } catch (e: Exception) {
                 logError(e)
@@ -264,30 +264,30 @@ class InAppUpdater {
 
         /** Clears cache and temporary files after update installation.
          */
-        private fun Activity.clearCacheAndTempFiles() {
-            try {
-                // कैश डायरेक्टरी साफ़ करें
-                this.cacheDir.listFiles()?.forEach { file ->
-                    if (file.exists() && !file.name.endsWith(".apk")) {
-                        deleteFileOnExit(file)
-                    }
-                }
-
-                // अस्थायी फ़ाइलें साफ़ करें (यदि कोई विशेष डायरेक्टरी हो)
-                val tempDir = File(this.cacheDir, "temp")
-                if (tempDir.exists()) {
-                    tempDir.listFiles()?.forEach { file ->
-                        if (file.exists() && !file.name.endsWith(".apk")) {
-                            deleteFileOnExit(file)
-                        }
-                    }
-                }
-
-                Log.d(LOG_TAG, "Cache and temporary files cleared successfully.")
-            } catch (e: Exception) {
-                Log.e(LOG_TAG, "Failed to clear cache and temporary files: ${e.message}")
-            }
-        }
+//        private fun Activity.clearCacheAndTempFiles() {
+//            try {
+//                // कैश डायरेक्टरी साफ़ करें
+//                this.cacheDir.listFiles()?.forEach { file ->
+//                    if (file.exists() && !file.name.endsWith(".apk")) {
+//                        deleteFileOnExit(file)
+//                    }
+//                }
+//
+//                // अस्थायी फ़ाइलें साफ़ करें (यदि कोई विशेष डायरेक्टरी हो)
+//                val tempDir = File(this.cacheDir, "temp")
+//                if (tempDir.exists()) {
+//                    tempDir.listFiles()?.forEach { file ->
+//                        if (file.exists() && !file.name.endsWith(".apk")) {
+//                            deleteFileOnExit(file)
+//                        }
+//                    }
+//                }
+//
+//                Log.d(LOG_TAG, "Cache and temporary files cleared successfully.")
+//            } catch (e: Exception) {
+//                Log.e(LOG_TAG, "Failed to clear cache and temporary files: ${e.message}")
+//            }
+//        }
 
         private fun Activity.showUpdateNotification() {
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(this)
