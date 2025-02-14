@@ -88,7 +88,10 @@ class InAppUpdater {
 
         private suspend fun Activity.getReleaseUpdate(): Update {
             val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
-            val headers = mapOf("Accept" to "application/vnd.github.v3+json")
+            val headers = mapOf(
+                "Accept" to "application/vnd.github.v3+json",
+                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
+            )
             val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
@@ -226,12 +229,12 @@ class InAppUpdater {
             }
             builder.setNegativeButton(this.getString(R.string.cancel)) { dialog: DialogInterface, _: Int ->
                 dialog.dismiss()
-                // यदि उपयोगकर्ता रद्द करता है, तो APK फ़ाइल को हटाने से बचें
             }
             val dialog = builder.create()
             dialog.show()
             dialog.setDefaultFocus()
         }
+
         /**
          * Opens the APK file for installation.
          */
@@ -250,44 +253,41 @@ class InAppUpdater {
                         data = contentUri
                     }
                     context.startActivity(installIntent)
-
-                    // APK फ़ाइल को इंस्टॉलेशन के बाद ही हटाएं
-                //    context.clearCacheAndTempFiles()
                 }
             } catch (e: Exception) {
                 logError(e)
-                // त्रुटि की स्थिति में भी APK फ़ाइल को हटाने से बचें
-                Log.e(LOG_TAG, "Failed to install APK: ${e.message}")
+                // Clear cache and temporary files even if installation fails
+                context.clearCacheAndTempFiles()
             }
+            // Clear cache and temporary files after successful installation
+            context.clearCacheAndTempFiles()
         }
 
         /** Clears cache and temporary files after update installation.
          */
-        // यह फ़ंक्शन सभी कैश और अस्थायी फ़ाइलें साफ़ करने के लिए उपयोग किया जाएगा
-        private fun Activity.clearAllCacheAndTempFiles() {
+        private fun Activity.clearCacheAndTempFiles() {
             try {
-                // सभी कैश फ़ाइलें हटाएं
-                this.cacheDir.deleteRecursively()
-
-                // अस्थायी फ़ाइलें हटाएं
-                val tempDir = File(this.cacheDir.parentFile, "temp")
-                if (tempDir.exists()) {
-                    tempDir.deleteRecursively()
+                // Clear cache directory
+                this.cacheDir.listFiles()?.forEach { file ->
+                    if (file.exists()) {
+                        deleteFileOnExit(file)
+                    }
                 }
 
-                Log.d(LOG_TAG, "All cache and temporary files cleared successfully.")
+                // Clear temporary files (if any specific directory is used for temp files)
+                val tempDir = File(this.cacheDir, "temp")
+                if (tempDir.exists()) {
+                    tempDir.listFiles()?.forEach { file ->
+                        if (file.exists()) {
+                            deleteFileOnExit(file)
+                        }
+                    }
+                }
+
+                Log.d(LOG_TAG, "Cache and temporary files cleared successfully.")
             } catch (e: Exception) {
                 Log.e(LOG_TAG, "Failed to clear cache and temporary files: ${e.message}")
             }
-        }
-
-        // अपडेट सफलतापूर्वक इंस्टॉल होने के बाद कैश और अस्थायी फ़ाइलें साफ़ करने के लिए इसे कॉल करें
-        private fun performPostUpdateOperations(activity: Activity) {
-            // सभी कैश और अस्थायी फ़ाइलें साफ़ करें
-            activity.clearAllCacheAndTempFiles()
-
-            // अन्य पोस्ट-अपडेट ऑपरेशन यहां जोड़ें (यदि कोई हो)
-            Log.d(LOG_TAG, "Post-update operations completed.")
         }
 
         private fun Activity.showUpdateNotification() {
@@ -367,8 +367,6 @@ class InAppUpdater {
                             downloadedFile.deleteOnExit()
                             showUpdateNotification()
 
-                            // अपडेट सफलतापूर्वक इंस्टॉल होने के बाद कैश और अस्थायी फ़ाइलें साफ़ करें
-                            performPostUpdateOperations(this@runAutoUpdate)
                         } catch (e: Exception) {
                             Log.e(
                                 LOG_TAG,
