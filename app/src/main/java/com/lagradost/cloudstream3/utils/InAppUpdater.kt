@@ -232,7 +232,6 @@ class InAppUpdater {
             dialog.show()
             dialog.setDefaultFocus()
         }
-
         /**
          * Opens the APK file for installation.
          */
@@ -265,7 +264,6 @@ class InAppUpdater {
         /** Clears cache and temporary files after update installation.
          */
         // यह फ़ंक्शन सभी कैश और अस्थायी फ़ाइलें साफ़ करने के लिए उपयोग किया जाएगा
-
         private fun Activity.clearAllCacheAndTempFiles() {
             try {
                 // सभी कैश फ़ाइलें हटाएं
