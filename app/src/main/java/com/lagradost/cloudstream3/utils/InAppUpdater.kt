@@ -88,10 +88,7 @@ class InAppUpdater {
 
         private suspend fun Activity.getReleaseUpdate(): Update {
             val url = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
-            val headers = mapOf(
-                "Accept" to "application/vnd.github.v3+json",
-                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-            )
+            val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response = parseJson<List<GithubRelease>>(app.get(url, headers = headers).text)
             val versionRegex = Regex("""(.*?((\d+)\.(\d+)\.(\d+))\.apk)""")
             val versionRegexLocal = Regex("""(.*?((\d+)\.(\d+)\.(\d+)).*)""")
@@ -141,10 +138,7 @@ class InAppUpdater {
             val tagUrl =
                 "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/git/ref/tags/pre-release"
             val releaseUrl = "https://api.github.com/repos/$GITHUB_USER_NAME/$GITHUB_REPO/releases"
-            val headers = mapOf(
-                "Accept" to "application/vnd.github.v3+json",
-                "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-            )
+            val headers = mapOf("Accept" to "application/vnd.github.v3+json")
             val response =
                 parseJson<List<GithubRelease>>(app.get(releaseUrl, headers = headers).text)
             val found = response.lastOrNull { it.prerelease || it.tagName == "pre-release" }
@@ -194,10 +188,7 @@ class InAppUpdater {
 
                 val sink: BufferedSink = downloadedFile.sink().buffer()
                 updateLock.withLock {
-                    val headers = mapOf(
-                        "Authorization" to "token ${BuildConfig.GH_TOKEN}" // Add GH_TOKEN here
-                    )
-                    sink.writeAll(app.get(url, headers = headers).body.source())
+                    sink.writeAll(app.get(url).body.source())
                     sink.close()
                     if (autoInstall) {
                         openApk(this, Uri.fromFile(downloadedFile))
@@ -257,13 +248,13 @@ class InAppUpdater {
             } catch (e: Exception) {
                 logError(e)
                 // Clear cache and temporary files even if installation fails
-                context.clearCacheAndTempFiles()
+            //    context.clearCacheAndTempFiles()
             }
             // Clear cache and temporary files after successful installation
             context.clearCacheAndTempFiles()
         }
 
-        /** Clears cache and temporary files after update installation.
+      /** Clears cache and temporary files after update installation.
          */
         private fun Activity.clearCacheAndTempFiles() {
             try {
@@ -367,6 +358,8 @@ class InAppUpdater {
                             downloadedFile.deleteOnExit()
                             showUpdateNotification()
 
+                            // Perform post-update operations after successful download
+                            // performPostUpdateOperations(this@runAutoUpdate)
                         } catch (e: Exception) {
                             Log.e(
                                 LOG_TAG,

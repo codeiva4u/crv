@@ -110,12 +110,12 @@ android {
                     "\"${System.getenv("REPO_NAME")}\""
                 )
 
-                // GitHub Token (from environment variable)
-                buildConfigField(
-                    "String",
-                    "GH_TOKEN",
-                    "\"${System.getenv("GH_TOKEN")}\""
-                )
+            //     GitHub Token (from environment variable)
+//                buildConfigField(
+//                    "String",
+//                    "GH_TOKEN",
+//                    "\"${System.getenv("GH_TOKEN")}\""
+//                )
 
                 // Test Instrumentation Runner
                 testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
