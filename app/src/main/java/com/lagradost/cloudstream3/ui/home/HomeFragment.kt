@@ -241,20 +241,18 @@ class HomeFragment : Fragment() {
             movies: Chip?,
             asian: Chip?,
             livestream: Chip?,
-            torrent: Chip?,
             nsfw: Chip?,
             others: Chip?,
         ): List<Pair<Chip?, List<TvType>>> {
             // This list should be same order as home screen to aid navigation
             return listOf(
-                Pair(movies, listOf(TvType.Movie)),
+                Pair(movies, listOf(TvType.Movie, TvType.Torrent)),
                 Pair(tvs, listOf(TvType.TvSeries)),
                 Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
                 Pair(asian, listOf(TvType.AsianDrama)),
                 Pair(cartoons, listOf(TvType.Cartoon)),
                 Pair(docs, listOf(TvType.Documentary)),
                 Pair(livestream, listOf(TvType.Live)),
-                Pair(torrent, listOf(TvType.Torrent)),
                 Pair(nsfw, listOf(TvType.NSFW)),
                 Pair(others, listOf(TvType.Others)),
             )
@@ -268,7 +266,6 @@ class HomeFragment : Fragment() {
             header.homeSelectMovies,
             header.homeSelectAsian,
             header.homeSelectLivestreams,
-            header.homeSelectTorrents,
             header.homeSelectNsfw,
             header.homeSelectOthers
         )
@@ -658,6 +655,16 @@ class HomeFragment : Fragment() {
             }, deleteCallback = delete)
         }
 
+ //========डिफ़ॉल्ट API: defaultApi वेरिएबल में डिफ़ॉल्ट API स्टोर करने का कोड है इसे यहाँ  पेस्ट करना है।=========
+        // Load the stored API or default to Movierulzhd
+
+        val storedApi = DataStoreHelper.currentHomePage
+        if (storedApi == null) {
+            DataStoreHelper.currentHomePage = "Movierulzhd"
+            homeViewModel.loadAndCancel("Movierulzhd", false)
+        } else {
+            homeViewModel.loadAndCancel(storedApi, false)
+        }
         homeViewModel.reloadStored()
         homeViewModel.loadAndCancel(DataStoreHelper.currentHomePage, false)
         //loadHomePage(false)

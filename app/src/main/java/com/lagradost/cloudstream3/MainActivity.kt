@@ -57,6 +57,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.navigationrail.NavigationRailView
 import com.google.android.material.snackbar.Snackbar
 import com.google.common.collect.Comparators.min
+import com.jaredrummler.android.colorpicker.BuildConfig
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import com.lagradost.cloudstream3.APIHolder.allProviders
 import com.lagradost.cloudstream3.APIHolder.apis
@@ -576,8 +577,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
+    //==================================================================================================
+// App Minimize Update:
+// When the app is minimized and then resumed, this block ensures that the app checks for updates
+// automatically by calling the `runAutoUpdate` function. This guarantees that the user is always
+// prompted with the latest update notification if available.
+//==================================================================================================
     override fun onResume() {
         super.onResume()
+        // Existing code for plugin loading event
         afterPluginsLoadedEvent += ::onAllPluginsLoaded
         setActivityInstance(this)
         try {
@@ -587,7 +595,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (e: Exception) {
             logError(e)
         }
+        // Add this line to check for updates when the app resumes
+        ioSafe {
+            runAutoUpdate(checkAutoUpdate = true)
+        }
     }
+//==================================================================================================
 
     override fun onPause() {
         super.onPause()

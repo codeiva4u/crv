@@ -6,6 +6,7 @@ import com.lagradost.cloudstream3.AcraApplication.Companion.context
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
@@ -68,11 +69,19 @@ data class SitePlugin(
 )
 
 
+//===================== इसे यहा बादलों ===========================================================
+
 object RepositoryManager {
-    const val ONLINE_PLUGINS_FOLDER = "Extensions"
+    const val ONLINE_PLUGINS_FOLDER = BuildConfig.ONLINE_PLUGINS_FOLDER
     val PREBUILT_REPOSITORIES: Array<RepositoryData> by lazy {
-        getKey("PREBUILT_REPOSITORIES") ?: emptyArray()
+        arrayOf(
+            RepositoryData(
+                name = BuildConfig.REPO_NAME,
+                url = BuildConfig.REPO_URL
+            )
+        )
     }
+//=============================== इसे यहा बादलो ==============================================================
     private val GH_REGEX = Regex("^https://raw.githubusercontent.com/([A-Za-z0-9-]+)/([A-Za-z0-9_.-]+)/(.*)$")
 
     /* Convert raw.githubusercontent.com urls to cdn.jsdelivr.net if enabled in settings */

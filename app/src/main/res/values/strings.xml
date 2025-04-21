@@ -857,4 +857,12 @@
     <string name="all_subtitles_bold">Make all subtitles bold</string>
     <string name="all_subtitles_italic">Make all subtitles italic</string>
     <string name="background_radius">Background Radius</string>
+    <!-- Update Notifications -->
+    <string name="update_file_missing">Update file is missing.</string>
+    <string name="install_update">Install Update</string>
+    <string name="cancel_update">Cancel Update</string>
+    <string name="skip_this_update">Skip This Update</string>
+    <string name="update_available_notification_title">Update Available</string>
+    <string name="update_progress_percentage">%d%%</string>
+    <string name="update_available_notification_message">A new version of the app is available. Do you want to update now?</string>
 </resources>
