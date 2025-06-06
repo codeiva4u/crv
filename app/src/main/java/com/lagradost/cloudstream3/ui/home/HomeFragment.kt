@@ -656,12 +656,12 @@ class HomeFragment : Fragment() {
         }
 
  //========डिफ़ॉल्ट API: defaultApi वेरिएबल में डिफ़ॉल्ट API स्टोर करने का कोड है इसे यहाँ  पेस्ट करना है।=========
-        // Load the stored API or default to Movierulzhd
+        // Load the stored API or default to MoviesDriveProvider
 
         val storedApi = DataStoreHelper.currentHomePage
         if (storedApi == null) {
-            DataStoreHelper.currentHomePage = "Movierulzhd"
-            homeViewModel.loadAndCancel("Movierulzhd", false)
+            DataStoreHelper.currentHomePage = "MoviesDriveProvider"
+            homeViewModel.loadAndCancel("MoviesDriveProvider", false)
         } else {
             homeViewModel.loadAndCancel(storedApi, false)
         }
