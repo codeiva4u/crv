@@ -660,7 +660,7 @@ class HomeFragment : Fragment() {
 
         val storedApi = DataStoreHelper.currentHomePage
         if (storedApi == null) {
-            DataStoreHelper.currentHomePage = "MoviesDriveProvider"
+            DataStoreHelper.currentHomePage = "MoviesDrive"
             homeViewModel.loadAndCancel("MoviesDriveProvider", false)
         } else {
             homeViewModel.loadAndCancel(storedApi, false)
