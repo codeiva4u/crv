@@ -582,8 +582,15 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         }
     }
 
+    //==================================================================================================
+// App Minimize Update:
+// When the app is minimized and then resumed, this block ensures that the app checks for updates
+// automatically by calling the `runAutoUpdate` function. This guarantees that the user is always
+// prompted with the latest update notification if available.
+//==================================================================================================
     override fun onResume() {
         super.onResume()
+        // Existing code for plugin loading event
         afterPluginsLoadedEvent += ::onAllPluginsLoaded
         setActivityInstance(this)
         try {
@@ -593,7 +600,12 @@ class MainActivity : AppCompatActivity(), ColorPickerDialogListener, BiometricCa
         } catch (e: Exception) {
             logError(e)
         }
+        // Add this line to check for updates when the app resumes
+        ioSafe {
+            runAutoUpdate(checkAutoUpdate = true)
+        }
     }
+//==================================================================================================
 
     override fun onPause() {
         super.onPause()

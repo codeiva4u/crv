@@ -6,11 +6,12 @@ import com.lagradost.cloudstream3.AcraApplication.Companion.context
 import com.lagradost.cloudstream3.AcraApplication.Companion.getKey
 import com.lagradost.cloudstream3.AcraApplication.Companion.setKey
 import com.lagradost.cloudstream3.R
+import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.amap
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.mvvm.logError
-import com.lagradost.cloudstream3.mvvm.safe
-import com.lagradost.cloudstream3.mvvm.safeAsync
+import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
+import com.lagradost.cloudstream3.mvvm.suspendSafeApiCall
 import com.lagradost.cloudstream3.plugins.PluginManager.getPluginSanitizedFileName
 import com.lagradost.cloudstream3.plugins.PluginManager.unloadPlugin
 import com.lagradost.cloudstream3.ui.settings.extensions.REPOSITORIES_KEY
@@ -68,11 +69,19 @@ data class SitePlugin(
 )
 
 
+//===================== इसे यहा बादलों ===========================================================
+
 object RepositoryManager {
-    const val ONLINE_PLUGINS_FOLDER = "Extensions"
+    const val ONLINE_PLUGINS_FOLDER = BuildConfig.ONLINE_PLUGINS_FOLDER
     val PREBUILT_REPOSITORIES: Array<RepositoryData> by lazy {
-        getKey("PREBUILT_REPOSITORIES") ?: emptyArray()
+        arrayOf(
+            RepositoryData(
+                name = BuildConfig.REPO_NAME,
+                url = BuildConfig.REPO_URL
+            )
+        )
     }
+//=============================== इसे यहा बादलो ==============================================================
     private val GH_REGEX = Regex("^https://raw.githubusercontent.com/([A-Za-z0-9-]+)/([A-Za-z0-9_.-]+)/(.*)$")
 
     /* Convert raw.githubusercontent.com urls to cdn.jsdelivr.net if enabled in settings */
@@ -94,12 +103,12 @@ object RepositoryManager {
                 else fixedUrl
             }
         } else if (fixedUrl.matches("^[a-zA-Z0-9!_-]+$".toRegex())) {
-            safeAsync {
+            suspendSafeApiCall {
                 app.get("https://cutt.ly/${fixedUrl}", allowRedirects = false).let { it2 ->
                     it2.headers["Location"]?.let { url ->
-                        if (url.startsWith("https://cutt.ly/404")) return@safeAsync null
-                        if (url.removeSuffix("/") == "https://cutt.ly") return@safeAsync null
-                        return@safeAsync url
+                        if (url.startsWith("https://cutt.ly/404")) return@suspendSafeApiCall null
+                        if (url.removeSuffix("/") == "https://cutt.ly") return@suspendSafeApiCall null
+                        return@suspendSafeApiCall url
                     }
                 }
             }
@@ -107,7 +116,7 @@ object RepositoryManager {
     }
 
     suspend fun parseRepository(url: String): Repository? {
-        return safeAsync {
+        return suspendSafeApiCall {
             // Take manifestVersion and such into account later
             app.get(convertRawGitUrl(url)).parsedSafe()
         }
@@ -142,7 +151,7 @@ object RepositoryManager {
         pluginUrl: String,
         file: File
     ): File? {
-        return safeAsync {
+        return suspendSafeApiCall {
             file.mkdirs()
 
             // Overwrite if exists
@@ -191,7 +200,7 @@ object RepositoryManager {
 
         // Unload all plugins, not using deletePlugin since we
         // delete all data and files in deleteRepositoryData
-        safe {
+        normalSafeApiCall {
             file.listFiles { plugin: File ->
                 unloadPlugin(plugin.absolutePath)
                 false

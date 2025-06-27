@@ -86,6 +86,34 @@ android {
             "SIMKL_CLIENT_SECRET",
             "\"" + (System.getenv("SIMKL_CLIENT_SECRET") ?: localProperties["simkl.secret"]) + "\""
         )
+		buildConfigField(
+            "String",
+            "ONLINE_PLUGINS_FOLDER",
+            "\"${System.getenv("ONLINE_PLUGINS_FOLDER")}\""
+        )
+
+        // Repository URL (from environment variable)
+        buildConfigField(
+            "String",
+            "REPO_URL",
+            "\"${System.getenv("REPO_URL")}\""
+        )
+
+        // Repository Name (from environment variable)
+        buildConfigField(
+            "String",
+            "REPO_NAME",
+            "\"${System.getenv("REPO_NAME")}\""
+        )
+
+        //     GitHub Token (from environment variable)
+//                buildConfigField(
+//                    "String",
+//                    "GH_TOKEN",
+//                    "\"${System.getenv("GH_TOKEN")}\""
+//                )
+
+        // Test Instrumentation Runner
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

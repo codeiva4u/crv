@@ -45,7 +45,6 @@ import com.lagradost.cloudstream3.ui.settings.Globals.TV
 import com.lagradost.cloudstream3.ui.settings.Globals.isLayout
 import com.lagradost.cloudstream3.utils.AppContextUtils.filterProviderByPreferredMedia
 import com.lagradost.cloudstream3.utils.AppContextUtils.getApiProviderLangSettings
-import com.lagradost.cloudstream3.utils.AppContextUtils.isNetworkAvailable
 import com.lagradost.cloudstream3.utils.AppContextUtils.isRecyclerScrollable
 import com.lagradost.cloudstream3.utils.AppContextUtils.loadSearchResult
 import com.lagradost.cloudstream3.utils.AppContextUtils.ownHide
@@ -57,7 +56,6 @@ import com.lagradost.cloudstream3.utils.Event
 import com.lagradost.cloudstream3.utils.SubtitleHelper.getFlagFromIso
 import com.lagradost.cloudstream3.utils.UIHelper.dismissSafe
 import com.lagradost.cloudstream3.utils.UIHelper.getSpanCount
-import com.lagradost.cloudstream3.utils.UIHelper.navigate
 import com.lagradost.cloudstream3.utils.UIHelper.popupMenuNoIconsAndNoStringRes
 import java.util.*
 
@@ -155,7 +153,7 @@ class HomeFragment : Fragment() {
                                 }
                             }
 
-                        builder.setTitle(R.string.clear_history)
+                        builder.setTitle(R.string.delete_file)
                             .setMessage(
                                 context.getString(R.string.delete_message).format(
                                     item.name
@@ -243,20 +241,18 @@ class HomeFragment : Fragment() {
             movies: Chip?,
             asian: Chip?,
             livestream: Chip?,
-            torrent: Chip?,
             nsfw: Chip?,
             others: Chip?,
         ): List<Pair<Chip?, List<TvType>>> {
             // This list should be same order as home screen to aid navigation
             return listOf(
-                Pair(movies, listOf(TvType.Movie)),
+                Pair(movies, listOf(TvType.Movie, TvType.Torrent)),
                 Pair(tvs, listOf(TvType.TvSeries)),
                 Pair(anime, listOf(TvType.Anime, TvType.OVA, TvType.AnimeMovie)),
                 Pair(asian, listOf(TvType.AsianDrama)),
                 Pair(cartoons, listOf(TvType.Cartoon)),
                 Pair(docs, listOf(TvType.Documentary)),
                 Pair(livestream, listOf(TvType.Live)),
-                Pair(torrent, listOf(TvType.Torrent)),
                 Pair(nsfw, listOf(TvType.NSFW)),
                 Pair(others, listOf(TvType.Others)),
             )
@@ -270,7 +266,6 @@ class HomeFragment : Fragment() {
             header.homeSelectMovies,
             header.homeSelectAsian,
             header.homeSelectLivestreams,
-            header.homeSelectTorrents,
             header.homeSelectNsfw,
             header.homeSelectOthers
         )
@@ -491,6 +486,10 @@ class HomeFragment : Fragment() {
     private var toggleRandomButton = false
 
     private var bottomSheetDialog: BottomSheetDialog? = null
+
+    // https://github.com/vivchar/RendererRecyclerViewAdapter/blob/185251ee9d94fb6eb3e063b00d646b745186c365/example/src/main/java/com/github/vivchar/example/pages/github/GithubFragment.kt#L32
+    // cry about it, but this is android we are talking about, we cant do the most simple shit without making a global variable
+    private var instanceState: Bundle = Bundle()
     private var homeMasterAdapter: HomeParentItemAdapterPreview? = null
 
     @SuppressLint("SetTextI18n")
@@ -591,6 +590,7 @@ class HomeFragment : Fragment() {
 
                     is Resource.Failure -> {
                         homeLoadingShimmer.stopShimmer()
+                        resultErrorText.text = data.errorString
                         homeReloadConnectionerror.setOnClickListener(apiChangeClickListener)
                         homeReloadConnectionOpenInBrowser.setOnClickListener { view ->
                             val validAPIs = apis//.filter { api -> api.hasMainPage }
@@ -614,27 +614,7 @@ class HomeFragment : Fragment() {
                         homeLoading.isVisible = false
                         homeLoadingError.isVisible = true
                         homeMasterRecycler.isVisible = false
-
-                        // Based on https://github.com/recloudstream/cloudstream/pull/1438
-                        val hasNoNetworkConnection = context?.isNetworkAvailable() == false
-                        val isNetworkError = data.isNetworkError
-
-                        // Show the downloads button if we have any sort of network shenanigans
-                        homeReloadConnectionGoToDownloads.isVisible =
-                            hasNoNetworkConnection || isNetworkError
-
-                        // Only hide the open in browser button if we know this is not network shenanigans related to cs3
-                        homeReloadConnectionOpenInBrowser.isGone = hasNoNetworkConnection
-
-                        resultErrorText.text = if (hasNoNetworkConnection) {
-                            getString(R.string.no_internet_connection)
-                        } else {
-                            data.errorString
-                        }
-
-                        homeReloadConnectionGoToDownloads.setOnClickListener {
-                            activity.navigate(R.id.navigation_downloads)
-                        }
+                        //home_loaded?.isVisible = false
                     }
 
                     is Resource.Loading -> {
@@ -675,6 +655,16 @@ class HomeFragment : Fragment() {
             }, deleteCallback = delete)
         }
 
+ //========डिफ़ॉल्ट API: defaultApi वेरिएबल में डिफ़ॉल्ट API स्टोर करने का कोड है इसे यहाँ  पेस्ट करना है।=========
+        // Load the stored API or default to MoviesDriveProvider
+
+        val storedApi = DataStoreHelper.currentHomePage
+        if (storedApi == null) {
+            DataStoreHelper.currentHomePage = "MoviesDrive"
+            homeViewModel.loadAndCancel("MoviesDriveProvider", false)
+        } else {
+            homeViewModel.loadAndCancel(storedApi, false)
+        }
         homeViewModel.reloadStored()
         homeViewModel.loadAndCancel(DataStoreHelper.currentHomePage, false)
         //loadHomePage(false)

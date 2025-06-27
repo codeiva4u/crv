@@ -874,4 +874,12 @@
     <string name="overscan_settings">Overscan</string>
     <string name="poster_size_settings_des">Changes size of posters</string>
     <string name="poster_size_settings">Poster size</string>
+    <!-- Update Notifications -->
+    <string name="update_file_missing">Update file is missing.</string>
+    <string name="install_update">Install Update</string>
+    <string name="cancel_update">Cancel Update</string>
+    <string name="skip_this_update">Skip This Update</string>
+    <string name="update_available_notification_title">Update Available</string>
+    <string name="update_progress_percentage">%d%%</string>
+    <string name="update_available_notification_message">A new version of the app is available. Do you want to update now?</string>
 </resources>

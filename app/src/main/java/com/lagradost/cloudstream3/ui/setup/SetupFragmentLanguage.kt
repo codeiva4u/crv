@@ -14,7 +14,7 @@ import com.lagradost.cloudstream3.BuildConfig
 import com.lagradost.cloudstream3.CommonActivity
 import com.lagradost.cloudstream3.R
 import com.lagradost.cloudstream3.databinding.FragmentSetupLanguageBinding
-import com.lagradost.cloudstream3.mvvm.safe
+import com.lagradost.cloudstream3.mvvm.normalSafeApiCall
 import com.lagradost.cloudstream3.plugins.PluginManager
 import com.lagradost.cloudstream3.ui.settings.appLanguages
 import com.lagradost.cloudstream3.ui.settings.getCurrentLocale
@@ -45,34 +45,29 @@ class SetupFragmentLanguage : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // We don't want a crash for all users
-        safe {
+        normalSafeApiCall {
             fixPaddingStatusbar(binding?.setupRoot)
 
-            val ctx = context ?: return@safe
+            val ctx = context ?: return@normalSafeApiCall
             val settingsManager = PreferenceManager.getDefaultSharedPreferences(ctx)
 
-            val arrayAdapter =
-                ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
+            val arrayAdapter = ArrayAdapter<String>(ctx, R.layout.sort_bottom_single_choice)
 
             binding?.apply {
-                // Icons may crash on some weird android versions?
-                safe {
+                normalSafeApiCall {
                     val drawable = when {
                         BuildConfig.DEBUG -> R.drawable.cloud_2_gradient_debug
-                        BuildConfig.FLAVOR == "prerelease" -> R.drawable.cloud_2_gradient_beta
+                        BuildConfig.BUILD_TYPE == "prerelease" -> R.drawable.cloud_2_gradient_beta
                         else -> R.drawable.cloud_2_gradient
                     }
                     appIconImage.setImageDrawable(ContextCompat.getDrawable(ctx, drawable))
                 }
 
-                val current = getCurrentLocale(ctx)
-                val languageCodes = appLanguages.map { it.third }
-                val languageNames = appLanguages.map { (emoji, name, iso) ->
-                    val flag = emoji.ifBlank { SubtitleHelper.getFlagFromIso(iso) ?: "ERROR" }
-                    "$flag $name"
-                }
-                val index = languageCodes.indexOf(current)
+    //====================Set English as the default language========================
+                val englishLanguage = appLanguages.find { it.third == "en" }
+                val languageCodes = listOf(englishLanguage?.third ?: "en")
+                val languageNames = listOf("${englishLanguage?.first ?: "🇬🇧"} ${englishLanguage?.second ?: "English"}")
+                val index = 0
 
                 arrayAdapter.addAll(languageNames)
                 listview1.adapter = arrayAdapter
@@ -82,17 +77,14 @@ class SetupFragmentLanguage : Fragment() {
                 listview1.setOnItemClickListener { _, _, position, _ ->
                     val code = languageCodes[position]
                     CommonActivity.setLocale(activity, code)
-                    settingsManager.edit().putString(getString(R.string.locale_key), code)
-                        .apply()
+                    settingsManager.edit().putString(getString(R.string.locale_key), code).apply()
                     activity?.recreate()
                 }
 
                 nextBtt.setOnClickListener {
-                    // If no plugins go to plugins page
                     val nextDestination = if (
                         PluginManager.getPluginsOnline().isEmpty()
                         && PluginManager.getPluginsLocal().isEmpty()
-                    //&& PREBUILT_REPOSITORIES.isNotEmpty()
                     ) R.id.action_navigation_global_to_navigation_setup_extensions
                     else R.id.action_navigation_setup_language_to_navigation_setup_provider_languages
 
@@ -106,7 +98,6 @@ class SetupFragmentLanguage : Fragment() {
                     findNavController().navigate(R.id.navigation_home)
                 }
             }
-
         }
     }
 }
