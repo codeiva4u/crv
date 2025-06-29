@@ -1,0 +1,93 @@
+{
+  "mcpServers": {
+    "firecrawl-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firecrawl-mcp"
+      ],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-38a74600e4794626a1dab91a6988a9b9"
+      },
+      "autoApprove": [
+        "firecrawl_scrape",
+        "firecrawl_map",
+        "firecrawl_crawl",
+        "firecrawl_check_crawl_status",
+        "firecrawl_search",
+        "firecrawl_extract",
+        "firecrawl_deep_research",
+        "firecrawl_generate_llmstxt"
+      ]
+    },
+    "crawl4ai": {
+      "transport": "sse",
+      "url": "https://mcpserver.duckdns.org/mcp/sse",
+      "disabled": false,
+      "alwaysAllow": [
+        "md",
+        "html",
+        "screenshot",
+        "pdf",
+        "execute_js",
+        "crawl",
+        "ask",
+        "code",
+        "video",
+        "markdown",
+        "browser"
+      ],
+      "autoApprove": [
+        "md",
+        "html",
+        "screenshot",
+        "pdf",
+        "execute_js",
+        "crawl",
+        "ask"
+      ],
+      "timeout": 60
+    },
+    "github.com/executeautomation/mcp-playwright": {
+      "command": "npx",
+      "args": [
+        "@executeautomation/playwright-mcp-server"
+      ],
+      "disabled": false,
+      "autoApprove": [
+        "playwright_close",
+        "start_codegen_session",
+        "end_codegen_session",
+        "get_codegen_session",
+        "clear_codegen_session",
+        "playwright_navigate",
+        "playwright_screenshot",
+        "playwright_click",
+        "playwright_iframe_click",
+        "playwright_iframe_fill",
+        "playwright_fill",
+        "playwright_select",
+        "playwright_hover",
+        "playwright_upload_file",
+        "playwright_evaluate",
+        "playwright_console_logs",
+        "playwright_get",
+        "playwright_post",
+        "playwright_put",
+        "playwright_patch",
+        "playwright_delete",
+        "playwright_expect_response",
+        "playwright_assert_response",
+        "playwright_custom_user_agent",
+        "playwright_get_visible_text",
+        "playwright_get_visible_html",
+        "playwright_go_back",
+        "playwright_go_forward",
+        "playwright_drag",
+        "playwright_press_key",
+        "playwright_click_and_switch_tab",
+        "playwright_save_as_pdf"
+      ]
+    }
+  }
+}
